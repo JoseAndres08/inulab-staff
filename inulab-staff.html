@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>INULABORATORIOS - Panel Staff</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            background: #f3f4f6;
+        }
+
+        #root {
+            height: 100%;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .tracking-map {
+            height: 220px;
+            width: 100%;
+            z-index: 1;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .leaflet-container {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .moto-marker-icon {
+            font-size: 28px;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        }
+
+        .dest-marker-icon {
+            font-size: 22px;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.4));
+        }
+
+        @keyframes moto-bounce {
+            0%,100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-5px)
+            }
+        }
+
+        .moto-animating {
+            animation: moto-bounce 0.7s infinite;
+        }
+
+        .night-switch {
+            width: 52px;
+            height: 28px;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+            .night-switch .knob {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: white;
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                transition: transform 0.3s;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            }
+
+            .night-switch.active .knob {
+                transform: translateX(24px);
+            }
+
+        @keyframes highlightFlash {
+            0% {
+                background-color: rgb(243,244,246)
+            }
+
+            25% {
+                background-color: rgba(6,182,212,0.15)
+            }
+
+            55% {
+                background-color: rgb(243,244,246)
+            }
+
+            80% {
+                background-color: rgba(6,182,212,0.08)
+            }
+
+            100% {
+                background-color: rgb(243,244,246)
+            }
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        input[type=number]::-webkit-inner-spin-button {
+            opacity: 1;
+        }
+
+        .login-wrapper {
+            background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #e3f2fd 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const API_BASE = 'http://localhost:7237';
+
+const api = {
+    token: () => localStorage.getItem('inulab_token'),
+    headers: () => ({ 'Content-Type':'application/json', 'Authorization': `Bearer ${api.token()}` }),
+    async call(method, path, body) {
+        const opts = { method, headers: api.headers() };
+        if (body) opts.body = JSON.stringify(body);
+        const r = await fetch(API_BASE + path, opts);
+        if (!r.ok) throw new Error(`${method} ${path} → ${r.status}`);
+        return r.json().catch(() => ({}));
+    },
+    async upload(path, formData) {
+        const r = await fetch(API_BASE + path, { method: 'POST', headers: { 'Authorization': `Bearer ${api.token()}` }, body: formData });
+        if (!r.ok) throw new Error(`Upload ${path} → ${r.status}`);
+        return r.json().catch(() => ({}));
+    },
+    login:            (u, p)    => api.call('POST', '/api/Auth/login', { username: u, password: p }),
+    me:               ()        => api.call('GET',  '/api/Auth/me'),
+    getOrders:        ()        => api.call('GET',  '/api/Orders'),
+    updateStatus:     (id, s)   => api.call('PUT',  `/api/Orders/${id}/status`, { status: s }),
+    assignMotorizado: (id, mId) => api.call('PUT',  `/api/Orders/${id}/assign-motorizado`, { motorizadoId: mId }),
+    uploadResult:     (id, fd)  => api.upload(`/api/Orders/${id}/upload-result`, fd),
+    uploadInvoice:    (fd)      => api.upload('/api/Facturas', fd),
+    getMotorizados:   ()        => api.call('GET', '/api/Users/motorizados'),
+    getPrecios:       ()        => api.call('GET', '/api/Precios'),
+    savePrecios:      (dtos)    => api.call('POST', '/api/Precios/bulk', dtos),
+    getCatalog:       ()        => api.call('GET',  '/api/Catalog'),
+    createExamen:     (data)    => api.call('POST', '/api/Catalog', data),
+    deleteExamen:     (id)      => api.call('DELETE', `/api/Catalog/${id}`),
+    getNightMode:     ()        => api.call('GET',  '/api/Config/nightmode'),
+    setNightMode:     (active)  => api.call('PUT',  '/api/Config/nightmode', { active }),
+    getMotoLocation:  (id)      => api.call('GET', `/api/Orders/${id}/location`).catch(() => null),
+};
+
+// Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
+const CATALOG_DEFAULT = [
+    // ── MÉDICO: Perfiles ──────────────────────────────────────────────────────
+    { id:'P1',  nombre:'Perfil Básico',                     categoria:'Perfiles',         tipo:'medico', precio:175 },
+    { id:'P2',  nombre:'Perfil CHEM 15',                    categoria:'Perfiles',         tipo:'medico', precio:219 },
+    { id:'P3',  nombre:'Perfil Básico Renal',               categoria:'Perfiles',         tipo:'medico', precio:330 },
+    { id:'P4',  nombre:'Perfil CHEM 15 Renal',              categoria:'Perfiles',         tipo:'medico', precio:375 },
+    { id:'P5',  nombre:'Perfil Básico + Electrolitos',      categoria:'Perfiles',         tipo:'medico', precio:226 },
+    { id:'P6',  nombre:'Perfil Electrolitos',               categoria:'Perfiles',         tipo:'medico', precio:120 },
+    { id:'P7',  nombre:'Perfil Hormonal',                   categoria:'Perfiles',         tipo:'medico', precio:170 },
+    { id:'P8',  nombre:'Perfil Hemoparásitos',              categoria:'Perfiles',         tipo:'medico', precio:165 },
+    { id:'P9',  nombre:'Perfil Felino',                     categoria:'Perfiles',         tipo:'medico', precio:180 },
+    // ── MÉDICO: Hematología ───────────────────────────────────────────────────
+    { id:'H1',  nombre:'Hemograma + Reticulocitos',         categoria:'Hematología',      tipo:'medico', precio:42 },
+    { id:'H2',  nombre:'Frotis de Hemoparásitos',           categoria:'Hematología',      tipo:'medico', precio:30 },
+    { id:'H3',  nombre:'Hemograma Manual',                  categoria:'Hematología',      tipo:'medico', precio:35 },
+    // ── MÉDICO: Bioquímica IDEXX ──────────────────────────────────────────────
+    { id:'B1',  nombre:'CHEM 10',                           categoria:'Bioquímica IDEXX', tipo:'medico', precio:140 },
+    { id:'B2',  nombre:'CHEM 15',                           categoria:'Bioquímica IDEXX', tipo:'medico', precio:195 },
+    { id:'B3',  nombre:'Creatinina',                        categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B4',  nombre:'BUN',                               categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B5',  nombre:'Fósforo',                           categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B6',  nombre:'Calcio',                            categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B7',  nombre:'Amoníaco (NH3)',                    categoria:'Bioquímica IDEXX', tipo:'medico', precio:37 },
+    { id:'B8',  nombre:'Electrolitos LYTE 4',               categoria:'Bioquímica IDEXX', tipo:'medico', precio:66 },
+    { id:'B9',  nombre:'Colesterol',                        categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B10', nombre:'Triglicéridos',                     categoria:'Bioquímica IDEXX', tipo:'medico', precio:35 },
+    { id:'B11', nombre:'Lactato',                           categoria:'Bioquímica IDEXX', tipo:'medico', precio:45 },
+    { id:'B12', nombre:'SDMA',                              categoria:'Bioquímica IDEXX', tipo:'medico', precio:165 },
+    { id:'B13', nombre:'Fructosamina',                      categoria:'Bioquímica IDEXX', tipo:'medico', precio:93 },
+    { id:'B14', nombre:'Fenobarbital',                      categoria:'Bioquímica IDEXX', tipo:'medico', precio:140 },
+    { id:'B15', nombre:'Ácidos Biliares',                   categoria:'Bioquímica IDEXX', tipo:'medico', precio:125 },
+    // ── MÉDICO: Endocrinología ────────────────────────────────────────────────
+    { id:'E1',  nombre:'Cortisol',                          categoria:'Endocrinología',   tipo:'medico', precio:50 },
+    { id:'E2',  nombre:'Progesterona',                      categoria:'Endocrinología',   tipo:'medico', precio:60 },
+    { id:'E3',  nombre:'TSH',                               categoria:'Endocrinología',   tipo:'medico', precio:65 },
+    { id:'E4',  nombre:'T4 Total (Healvet)',                categoria:'Endocrinología',   tipo:'medico', precio:60 },
+    { id:'E5',  nombre:'T4 Total (IDEXX)',                  categoria:'Endocrinología',   tipo:'medico', precio:98 },
+    { id:'E6',  nombre:'T4 Libre',                          categoria:'Endocrinología',   tipo:'medico', precio:48 },
+    { id:'E7',  nombre:'T3 Triyodotironina',                categoria:'Endocrinología',   tipo:'medico', precio:65 },
+    // ── MÉDICO: PCR ───────────────────────────────────────────────────────────
+    { id:'PCR1',nombre:'PCR Leucemia Felina',               categoria:'PCR',              tipo:'medico', precio:200 },
+    { id:'PCR2',nombre:'PCR Mycoplasma Hemotrópico',        categoria:'PCR',              tipo:'medico', precio:200 },
+    { id:'PCR3',nombre:'PCR Erlichia',                      categoria:'PCR',              tipo:'medico', precio:200 },
+    { id:'PCR4',nombre:'PCR Anaplasma SPP',                 categoria:'PCR',              tipo:'medico', precio:200 },
+    { id:'PCR5',nombre:'PCR Leptospira Interrogans',        categoria:'PCR',              tipo:'medico', precio:200 },
+    { id:'PCR6',nombre:'PCR VIF / VILEF',                   categoria:'PCR',              tipo:'medico', precio:220 },
+    { id:'PCR7',nombre:'PCR Panel Completo',                categoria:'PCR',              tipo:'medico', precio:380 },
+    // ── MÉDICO: Inmunoserología ───────────────────────────────────────────────
+    { id:'I1',  nombre:'SNAP Combo Felino',                 categoria:'Inmunoserología',  tipo:'medico', precio:145 },
+    { id:'I2',  nombre:'SNAP 4DX Plus',                     categoria:'Inmunoserología',  tipo:'medico', precio:130 },
+    { id:'I3',  nombre:'SNAP cPL Cualitativo',              categoria:'Inmunoserología',  tipo:'medico', precio:145 },
+    { id:'I4',  nombre:'SNAP fPL Cualitativo',              categoria:'Inmunoserología',  tipo:'medico', precio:140 },
+    { id:'I5',  nombre:'Brucella Canino',                   categoria:'Inmunoserología',  tipo:'medico', precio:80 },
+    { id:'I6',  nombre:'Leptospira MAT',                    categoria:'Inmunoserología',  tipo:'medico', precio:100 },
+    { id:'I7',  nombre:'Toxoplasma IgG & IgM',              categoria:'Inmunoserología',  tipo:'medico', precio:160 },
+    { id:'I8',  nombre:'Lipasa Canina/Felina (Healvet)',     categoria:'Inmunoserología',  tipo:'medico', precio:75 },
+    { id:'I9',  nombre:'Lipasa Canina/Felina (IDEXX)',       categoria:'Inmunoserología',  tipo:'medico', precio:125 },
+    // ── MÉDICO: Coagulación ───────────────────────────────────────────────────
+    { id:'C1',  nombre:'TP + TTPA + Fibrinógeno',           categoria:'Coagulación',      tipo:'medico', precio:75 },
+    { id:'C2',  nombre:'TP + TTPA + Fibrinógeno + Dímero D',categoria:'Coagulación',      tipo:'medico', precio:125 },
+    // ── MÉDICO: Patología ─────────────────────────────────────────────────────
+    { id:'PA1', nombre:'Citología',                         categoria:'Patología',        tipo:'medico', precio:70 },
+    { id:'PA2', nombre:'Histopatología',                    categoria:'Patología',        tipo:'medico', precio:120 },
+    // ── MÉDICO: Uroanálisis ───────────────────────────────────────────────────
+    { id:'U1',  nombre:'Examen de Orina Completo',          categoria:'Uroanálisis',      tipo:'medico', precio:16 },
+    { id:'U2',  nombre:'Urocultivo',                        categoria:'Uroanálisis',      tipo:'medico', precio:35 },
+    { id:'U3',  nombre:'Orina + Urocultivo',                categoria:'Uroanálisis',      tipo:'medico', precio:46 },
+    { id:'U4',  nombre:'UPC Colorimetría',                  categoria:'Uroanálisis',      tipo:'medico', precio:55 },
+    { id:'U5',  nombre:'UPC IDEXX',                         categoria:'Uroanálisis',      tipo:'medico', precio:90 },
+    { id:'U6',  nombre:'Orina Completo IDEXX SEDIVUE',      categoria:'Uroanálisis',      tipo:'medico', precio:155 },
+    // ── MÉDICO: Parasitología ─────────────────────────────────────────────────
+    { id:'PR1', nombre:'Coprológico Simple',                categoria:'Parasitología',    tipo:'medico', precio:15 },
+    { id:'PR2', nombre:'Coprológico Funcional',             categoria:'Parasitología',    tipo:'medico', precio:25 },
+    { id:'PR3', nombre:'Coprológico Completo',              categoria:'Parasitología',    tipo:'medico', precio:40 },
+    { id:'PR4', nombre:'Giardia Ag Cuantitativo',           categoria:'Parasitología',    tipo:'medico', precio:70 },
+    // ── MÉDICO: Microbiología ─────────────────────────────────────────────────
+    { id:'M1',  nombre:'Cultivo + 1 Antibiograma',          categoria:'Microbiología',    tipo:'medico', precio:45 },
+
+    // ── DUEÑO: Servicios (paquetes amigables) ─────────────────────────────────
+    { id:'S1',  nombre:'Chequeo General',                   categoria:'Servicios',        tipo:'dueno', precio:250 },
+    { id:'S2',  nombre:'Chequeo Completo',                  categoria:'Servicios',        tipo:'dueno', precio:320 },
+    { id:'S3',  nombre:'Control de Riñones',                categoria:'Servicios',        tipo:'dueno', precio:450 },
+    { id:'S4',  nombre:'Mi perro está decaído',             categoria:'Servicios',        tipo:'dueno', precio:250 },
+    { id:'S5',  nombre:'Chequeo para Gatos',                categoria:'Servicios',        tipo:'dueno', precio:250 },
+    { id:'S6',  nombre:'Análisis de Orina',                 categoria:'Servicios',        tipo:'dueno', precio:50 },
+    { id:'S7',  nombre:'Examen de Heces',                   categoria:'Servicios',        tipo:'dueno', precio:90 },
+    { id:'S8',  nombre:'Problemas de Piel u Oídos',         categoria:'Servicios',        tipo:'dueno', precio:90 },
+    // ── DUEÑO: Perfiles ───────────────────────────────────────────────────────
+    { id:'DP1', nombre:'Perfil Básico',                     categoria:'Perfiles',         tipo:'dueno', precio:250 },
+    { id:'DP2', nombre:'Perfil CHEM 15',                    categoria:'Perfiles',         tipo:'dueno', precio:320 },
+    { id:'DP3', nombre:'Perfil Básico Renal',               categoria:'Perfiles',         tipo:'dueno', precio:400 },
+    { id:'DP4', nombre:'Perfil CHEM 15 Renal',              categoria:'Perfiles',         tipo:'dueno', precio:450 },
+    { id:'DP5', nombre:'Perfil Básico + Electrolitos',      categoria:'Perfiles',         tipo:'dueno', precio:350 },
+    { id:'DP6', nombre:'Perfil Electrolitos',               categoria:'Perfiles',         tipo:'dueno', precio:220 },
+    { id:'DP7', nombre:'Perfil Hormonal',                   categoria:'Perfiles',         tipo:'dueno', precio:300 },
+    { id:'DP8', nombre:'Perfil Hemoparásitos',              categoria:'Perfiles',         tipo:'dueno', precio:250 },
+    { id:'DP9', nombre:'Perfil Felino',                     categoria:'Perfiles',         tipo:'dueno', precio:280 },
+    // ── DUEÑO: Hematología ────────────────────────────────────────────────────
+    { id:'DH1', nombre:'Hemograma + Reticulocitos',         categoria:'Hematología',      tipo:'dueno', precio:70 },
+    { id:'DH2', nombre:'Frotis de Hemoparásitos',           categoria:'Hematología',      tipo:'dueno', precio:60 },
+    { id:'DH3', nombre:'Hemograma Manual',                  categoria:'Hematología',      tipo:'dueno', precio:65 },
+    // ── DUEÑO: Bioquímica IDEXX ───────────────────────────────────────────────
+    { id:'DB1', nombre:'CHEM 10',                           categoria:'Bioquímica IDEXX', tipo:'dueno', precio:195 },
+    { id:'DB2', nombre:'CHEM 15',                           categoria:'Bioquímica IDEXX', tipo:'dueno', precio:270 },
+    { id:'DB3', nombre:'Creatinina',                        categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB4', nombre:'BUN',                               categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB5', nombre:'Fósforo',                           categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB6', nombre:'Calcio',                            categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB7', nombre:'Amoníaco (NH3)',                    categoria:'Bioquímica IDEXX', tipo:'dueno', precio:75 },
+    { id:'DB8', nombre:'Electrolitos LYTE 4',               categoria:'Bioquímica IDEXX', tipo:'dueno', precio:120 },
+    { id:'DB9', nombre:'Colesterol',                        categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB10',nombre:'Triglicéridos',                     categoria:'Bioquímica IDEXX', tipo:'dueno', precio:45 },
+    { id:'DB11',nombre:'Lactato',                           categoria:'Bioquímica IDEXX', tipo:'dueno', precio:65 },
+    { id:'DB12',nombre:'SDMA',                              categoria:'Bioquímica IDEXX', tipo:'dueno', precio:220 },
+    { id:'DB13',nombre:'Fructosamina',                      categoria:'Bioquímica IDEXX', tipo:'dueno', precio:140 },
+    { id:'DB14',nombre:'Fenobarbital',                      categoria:'Bioquímica IDEXX', tipo:'dueno', precio:220 },
+    { id:'DB15',nombre:'Ácidos Biliares',                   categoria:'Bioquímica IDEXX', tipo:'dueno', precio:220 },
+    // ── DUEÑO: Endocrinología ─────────────────────────────────────────────────
+    { id:'DE1', nombre:'Cortisol',                          categoria:'Endocrinología',   tipo:'dueno', precio:90 },
+    { id:'DE2', nombre:'Progesterona',                      categoria:'Endocrinología',   tipo:'dueno', precio:95 },
+    { id:'DE3', nombre:'TSH',                               categoria:'Endocrinología',   tipo:'dueno', precio:98 },
+    { id:'DE4', nombre:'T4 Total (Healvet)',                categoria:'Endocrinología',   tipo:'dueno', precio:110 },
+    { id:'DE5', nombre:'T4 Total (IDEXX)',                  categoria:'Endocrinología',   tipo:'dueno', precio:140 },
+    { id:'DE6', nombre:'T4 Libre',                          categoria:'Endocrinología',   tipo:'dueno', precio:90 },
+    { id:'DE7', nombre:'T3 Triyodotironina',                categoria:'Endocrinología',   tipo:'dueno', precio:95 },
+    // ── DUEÑO: PCR ────────────────────────────────────────────────────────────
+    { id:'DPCR1',nombre:'PCR Leucemia Felina',              categoria:'PCR',              tipo:'dueno', precio:400 },
+    { id:'DPCR2',nombre:'PCR Mycoplasma Hemotrópico',       categoria:'PCR',              tipo:'dueno', precio:400 },
+    { id:'DPCR3',nombre:'PCR Erlichia',                     categoria:'PCR',              tipo:'dueno', precio:400 },
+    { id:'DPCR4',nombre:'PCR Anaplasma SPP',                categoria:'PCR',              tipo:'dueno', precio:400 },
+    { id:'DPCR5',nombre:'PCR Leptospira Interrogans',       categoria:'PCR',              tipo:'dueno', precio:400 },
+    { id:'DPCR6',nombre:'PCR VIF / VILEF',                  categoria:'PCR',              tipo:'dueno', precio:420 },
+    { id:'DPCR7',nombre:'PCR Panel Completo',               categoria:'PCR',              tipo:'dueno', precio:480 },
+    // ── DUEÑO: Inmunoserología ────────────────────────────────────────────────
+    { id:'DI1', nombre:'SNAP Combo Felino',                 categoria:'Inmunoserología',  tipo:'dueno', precio:240 },
+    { id:'DI2', nombre:'SNAP 4DX Plus',                     categoria:'Inmunoserología',  tipo:'dueno', precio:220 },
+    { id:'DI3', nombre:'SNAP cPL Cualitativo',              categoria:'Inmunoserología',  tipo:'dueno', precio:180 },
+    { id:'DI4', nombre:'SNAP fPL Cualitativo',              categoria:'Inmunoserología',  tipo:'dueno', precio:140 },
+    { id:'DI5', nombre:'Brucella Canino',                   categoria:'Inmunoserología',  tipo:'dueno', precio:180 },
+    { id:'DI6', nombre:'Leptospira MAT',                    categoria:'Inmunoserología',  tipo:'dueno', precio:180 },
+    { id:'DI7', nombre:'Toxoplasma IgG & IgM',              categoria:'Inmunoserología',  tipo:'dueno', precio:300 },
+    { id:'DI8', nombre:'Lipasa Canina/Felina (Healvet)',     categoria:'Inmunoserología',  tipo:'dueno', precio:120 },
+    { id:'DI9', nombre:'Lipasa Canina/Felina (IDEXX)',       categoria:'Inmunoserología',  tipo:'dueno', precio:190 },
+    // ── DUEÑO: Coagulación ────────────────────────────────────────────────────
+    { id:'DC1', nombre:'TP + TTPA + Fibrinógeno',           categoria:'Coagulación',      tipo:'dueno', precio:150 },
+    { id:'DC2', nombre:'TP + TTPA + Fibrinógeno + Dímero D',categoria:'Coagulación',      tipo:'dueno', precio:250 },
+    // ── DUEÑO: Patología ──────────────────────────────────────────────────────
+    { id:'DPA1',nombre:'Citología',                         categoria:'Patología',        tipo:'dueno', precio:130 },
+    { id:'DPA2',nombre:'Histopatología',                    categoria:'Patología',        tipo:'dueno', precio:250 },
+    // ── DUEÑO: Uroanálisis ────────────────────────────────────────────────────
+    { id:'DU1', nombre:'Examen de Orina Completo',          categoria:'Uroanálisis',      tipo:'dueno', precio:45 },
+    { id:'DU2', nombre:'Urocultivo',                        categoria:'Uroanálisis',      tipo:'dueno', precio:50 },
+    { id:'DU3', nombre:'Orina + Urocultivo',                categoria:'Uroanálisis',      tipo:'dueno', precio:83 },
+    { id:'DU4', nombre:'UPC Colorimetría',                  categoria:'Uroanálisis',      tipo:'dueno', precio:90 },
+    { id:'DU5', nombre:'UPC IDEXX',                         categoria:'Uroanálisis',      tipo:'dueno', precio:83 },
+    { id:'DU6', nombre:'Orina Completo IDEXX SEDIVUE',      categoria:'Uroanálisis',      tipo:'dueno', precio:155 },
+    // ── DUEÑO: Parasitología ──────────────────────────────────────────────────
+    { id:'DPR1',nombre:'Coprológico Simple',                categoria:'Parasitología',    tipo:'dueno', precio:45 },
+    { id:'DPR2',nombre:'Coprológico Funcional',             categoria:'Parasitología',    tipo:'dueno', precio:55 },
+    { id:'DPR3',nombre:'Coprológico Completo',              categoria:'Parasitología',    tipo:'dueno', precio:80 },
+    { id:'DPR4',nombre:'Giardia Ag Cuantitativo',           categoria:'Parasitología',    tipo:'dueno', precio:95 },
+    // ── DUEÑO: Microbiología ──────────────────────────────────────────────────
+    { id:'DM1', nombre:'Cultivo + 1 Antibiograma',          categoria:'Microbiología',    tipo:'dueno', precio:120 },
+];
+
+const STATUS_MAP = {
+    'pending':           { label:'Pendiente',          color:'text-amber-700',   bg:'bg-amber-50',   icon:'fa-clock' },
+    'assigned':          { label:'Asignado a moto',    color:'text-blue-700',    bg:'bg-blue-50',    icon:'fa-user-check' },
+    'moto_en_camino':    { label:'Moto en camino',     color:'text-cyan-700',    bg:'bg-cyan-50',    icon:'fa-motorcycle' },
+    'moto_arrived':      { label:'Moto llegó',         color:'text-red-700',     bg:'bg-red-50',     icon:'fa-map-marker-alt' },
+    'pickup_in_progress':{ label:'Recogiendo muestra', color:'text-orange-700',  bg:'bg-orange-50',  icon:'fa-hourglass-start' },
+    'sample_received':   { label:'Regresando al lab',  color:'text-violet-700',  bg:'bg-violet-50',  icon:'fa-route' },
+    'arrived_at_lab':    { label:'En laboratorio',     color:'text-purple-700',  bg:'bg-purple-50',  icon:'fa-flask' },
+    'processing':        { label:'En proceso',         color:'text-sky-700',     bg:'bg-sky-50',     icon:'fa-flask' },
+    'results_uploaded':  { label:'Esperando pago',     color:'text-orange-700',  bg:'bg-orange-50',  icon:'fa-credit-card' },
+    'completed':         { label:'Completado',         color:'text-emerald-700', bg:'bg-emerald-50', icon:'fa-check-circle' },
+};
+
+const getStatusInfo = (s) => STATUS_MAP[s] || STATUS_MAP['pending'];
+
+const normalizeOrder = (o) => {
+    const statusList = ['pending','assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received','arrived_at_lab','processing','results_uploaded','completed'];
+    const status = typeof o.status === 'number' ? (statusList[o.status] || 'pending') : (o.status || 'pending');
+    const fullUrl = (url) => { if (!url) return null; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; };
+    const orderResultPdf = fullUrl(o.resultPdfUrl || o.ResultPdfUrl);
+    return {
+        id: o.id,
+        userName: o.userName || o.serviceName || o.clientName || 'Cliente',
+        userType: o.userType || 'cliente',
+        userId: o.userId || o.clientId,
+        status, date: o.createdAt || o.date, completedAt: o.completedAt,
+        items: (o.items || []).map(it => ({
+            exam: { id: it.examId || it.exam?.id, name: it.examName || it.exam?.name || 'Examen' },
+            pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '' },
+            address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
+            pdfData: fullUrl(it.pdfUrl || it.pdfData) || orderResultPdf,
+        })),
+        comment: o.comment || '', documentType: o.documentType || 'boleta',
+        invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
+        invoicePdf: fullUrl(o.invoicePdfUrl || o.invoicePdf),
+        resultPdf: orderResultPdf,
+        assignedTo: o.motorizadoId || o.assignedTo || null,
+        motoName: o.motorizado?.username || o.motoName || null,
+    };
+};
+
+const getPetFullName = (pet) => {
+    if (!pet?.owner) return pet?.name || '';
+    const parts = pet.owner.trim().split(' ');
+    const last = parts.length > 1 ? parts.slice(1).join(' ') : '';
+    return last ? `${pet.name} ${last}` : pet.name;
+};
+
+const PetPhoto = ({ photo, size = 'md' }) => {
+    const sizeMap = { sm: 'w-6 h-6 text-base', md: 'w-8 h-8 text-xl', lg: 'w-10 h-10 text-2xl', xl: 'w-12 h-12 text-3xl' };
+    const cls = sizeMap[size] || sizeMap.md;
+    const [imgErr, setImgErr] = React.useState(false);
+    if (!photo || imgErr) return <span className={`${cls} flex items-center justify-center leading-none flex-shrink-0`}>🐾</span>;
+    const isImg = photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('data:') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(photo);
+    if (isImg) {
+        const src = (photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('data:')) ? photo : `${API_BASE}/uploads/${photo}`;
+        return <img src={src} className={`${cls} rounded-full object-cover flex-shrink-0`} onError={() => setImgErr(true)} />;
+    }
+    return <span className={`${cls} flex items-center justify-center leading-none flex-shrink-0`}>{photo}</span>;
+};
+
+// ── MAPA ──────────────────────────────────────────
+const TrackingMap = ({ order, phase }) => {
+    const mapRef = useRef(null); const mapInst = useRef(null); const motoMarker = useRef(null);
+    const [eta, setEta] = useState('--'); const [dist, setDist] = useState('--'); const [hasGps, setHasGps] = useState(false);
+    const clientLat = order.items?.[0]?.address?.lat || -12.0464; const clientLng = order.items?.[0]?.address?.lng || -77.0428;
+    const labLat = -12.0614; const labLng = -77.0378;
+    const dest = phase === 'returning' ? [labLat, labLng] : [clientLat, clientLng];
+    const calcDist = (p1, p2) => { const R=6371, dLat=(p2[0]-p1[0])*Math.PI/180, dLon=(p2[1]-p1[1])*Math.PI/180; const a=Math.sin(dLat/2)**2+Math.cos(p1[0]*Math.PI/180)*Math.cos(p2[0]*Math.PI/180)*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); };
+    useEffect(() => {
+        if (!mapRef.current || mapInst.current) return;
+        const map = L.map(mapRef.current, { zoomControl:false, attributionControl:false }).setView([-12.0514,-77.0453], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([clientLat,clientLng],{icon:L.divIcon({html:'<div class="dest-marker-icon">🏠</div>',className:'',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(map);
+        L.marker([labLat,labLng],{icon:L.divIcon({html:'<div class="dest-marker-icon">🏥</div>',className:'',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(map);
+        const mk = L.marker([-12.0514,-77.0453],{icon:L.divIcon({html:'<div class="moto-marker-icon moto-animating">🛵</div>',className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);
+        motoMarker.current = mk; mapInst.current = map;
+        const poll = async () => { try { const loc = await api.getMotoLocation(order.id); if (loc && loc.lat) { setHasGps(true); const pos = [loc.lat, loc.lng]; motoMarker.current?.setLatLng(pos); mapInst.current?.panTo(pos, {animate:true, duration:0.5}); const d = calcDist(pos, dest); setDist(d.toFixed(1)); setEta(Math.max(1, Math.ceil(d * 4))); } } catch {} };
+        poll(); const t = setInterval(poll, 5000); return () => clearInterval(t);
+    }, []);
+    return (
+        <div className="mt-3 mb-1">
+            <div className={`rounded-xl p-2.5 mb-2 flex items-center gap-2 ${phase==='returning'?'bg-violet-100 border border-violet-300':'bg-cyan-100 border border-cyan-300'}`}>
+                <i className={`fas ${phase==='returning'?'fa-route text-violet-600':'fa-motorcycle text-cyan-600'} text-sm`}></i>
+                <span className={`text-sm font-semibold ${phase==='returning'?'text-violet-800':'text-cyan-800'}`}>{phase==='returning'?'Regresando al laboratorio':'En camino al cliente'}</span>
+                <span className="ml-auto text-xs text-gray-600">{hasGps ? '📡 GPS real' : '⏳ Esperando GPS...'}</span>
+            </div>
+            <div className="rounded-xl overflow-hidden shadow-xl border border-gray-200"><div ref={mapRef} className="tracking-map"></div></div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className={`rounded-xl p-2.5 text-center ${phase==='returning'?'bg-violet-50':'bg-cyan-50'}`}><p className="text-xs text-gray-600">Tiempo estimado</p><p className={`text-xl font-bold ${phase==='returning'?'text-violet-700':'text-cyan-700'}`}>{eta} {eta!=='--'?'min':''}</p></div>
+                <div className={`rounded-xl p-2.5 text-center ${phase==='returning'?'bg-purple-50':'bg-blue-50'}`}><p className="text-xs text-gray-600">Distancia</p><p className={`text-xl font-bold ${phase==='returning'?'text-purple-700':'text-blue-700'}`}>{dist} {dist!=='--'?'km':''}</p></div>
+            </div>
+        </div>
+    );
+};
+
+// ── PDF MODAL ─────────────────────────────────────
+const PdfModal = ({ title, subtitle, icon, pdfUrl, onClose }) => {
+    const handleDownload = async () => { try { const r = await fetch(pdfUrl, { headers: { 'Authorization': `Bearer ${localStorage.getItem('inulab_token')}` } }); const blob = await r.blob(); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = (title || 'documento') + '.pdf'; document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url); } catch { window.open(pdfUrl, '_blank'); } };
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[300] p-4">
+            <div className="bg-white rounded-2xl w-full max-w-4xl h-[90vh] flex flex-col border border-gray-200 shadow-2xl">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center"><i className={`fas ${icon} text-cyan-600`}></i></div>
+                        <div><p className="font-semibold text-gray-800 text-sm">{title}</p>{subtitle && <p className="text-xs text-gray-600">{subtitle}</p>}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-semibold transition-colors"><i className="fas fa-download text-xs"></i> Descargar</button>
+                        <button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors"><i className="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div className="flex-1 p-3 min-h-0">{pdfUrl ? <iframe src={pdfUrl} className="w-full h-full rounded-lg" /> : <div className="flex items-center justify-center h-full text-gray-500">No hay PDF disponible</div>}</div>
+            </div>
+        </div>
+    );
+};
+
+// ── MODAL SUBIR RESULTADOS ────────────────────────
+const UploadResultsModal = ({ order, onClose, onSuccess }) => {
+    const [files, setFiles] = useState({}); const [loading, setLoading] = useState(false); const [msg, setMsg] = useState('');
+    const handleFile = (idx, e) => { const f = e.target.files[0]; if (!f || f.type !== 'application/pdf') return; setFiles(prev => ({ ...prev, [idx]: f })); };
+    const submit = async () => {
+        const allHave = order.items.every((_, i) => files[i]); if (!allHave) { setMsg('Sube el PDF de cada examen'); return; }
+        setLoading(true);
+        try { for (let i = 0; i < order.items.length; i++) { const fd = new FormData(); fd.append('file', files[i]); fd.append('itemIndex', i); await api.uploadResult(order.id, fd); } onSuccess('✅ Resultados subidos correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
+        setLoading(false);
+    };
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-2xl max-h-[90vh] flex flex-col">
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <div><h2 className="text-gray-800 font-bold">Subir Resultados</h2><p className="text-gray-600 text-sm">{order.userName} · {order.items.length} examen(es)</p></div>
+                    <button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                    {order.items.map((item, idx) => (
+                        <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                            <div className="flex items-center gap-3 mb-3"><PetPhoto photo={item.pet?.photo} size="lg" /><div><p className="font-semibold text-gray-800 text-sm">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs">{item.exam?.name}</p></div></div>
+                            {files[idx] ? (
+                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-lg"><i className="fas fa-check-circle text-emerald-600 text-sm"></i><span className="text-emerald-800 text-sm flex-1 truncate">{files[idx].name}</span><button onClick={() => setFiles(p => { const n={...p}; delete n[idx]; return n; })} className="text-gray-500 hover:text-gray-700"><i className="fas fa-times text-xs"></i></button></div>
+                            ) : (
+                                <label className="flex items-center gap-3 bg-white border-2 border-dashed border-gray-300 hover:border-cyan-500 hover:bg-cyan-50 px-3 py-3 rounded-lg cursor-pointer transition-all"><i className="fas fa-upload text-gray-500"></i><span className="text-gray-600 text-sm">Seleccionar PDF del resultado</span><input type="file" accept="application/pdf" className="hidden" onChange={e => handleFile(idx, e)} /></label>
+                            )}
+                        </div>
+                    ))}
+                    {msg && <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{msg}</p>}
+                </div>
+                <div className="p-5 border-t border-gray-200 flex-shrink-0">
+                    <button onClick={submit} disabled={loading} className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+                        {loading ? <><i className="fas fa-spinner fa-spin"></i> Subiendo...</> : <><i className="fas fa-cloud-upload-alt"></i> Subir y notificar al cliente</>}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ── MODAL COMPROBANTE ─────────────────────────────
+const InvoiceModal = ({ order, onClose, onSuccess }) => {
+    const [file, setFile] = useState(null); const [type, setType] = useState(order.documentType || 'boleta'); const [loading, setLoading] = useState(false); const [msg, setMsg] = useState('');
+    const submit = async () => {
+        if (!file) { setMsg('Selecciona un PDF'); return; } setLoading(true);
+        try { const fd = new FormData(); fd.append('file', file); fd.append('orderId', order.id); fd.append('documentType', type); await api.uploadInvoice(fd); onSuccess('✅ Comprobante subido correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
+        setLoading(false);
+    };
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between"><div><h2 className="text-gray-800 font-bold">Subir Comprobante</h2><p className="text-gray-600 text-sm">{order.userName}</p></div><button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
+                <div className="p-5 space-y-4">
+                    <div className="flex gap-2">{['boleta','factura'].map(t => (<button key={t} onClick={() => setType(t)} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${type===t?(t==='boleta'?'bg-cyan-600 text-white':'bg-amber-500 text-white'):'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><i className={`fas ${t==='boleta'?'fa-receipt':'fa-file-invoice-dollar'} mr-2`}></i>{t.charAt(0).toUpperCase()+t.slice(1)}</button>))}</div>
+                    {file ? (<div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-3 rounded-xl"><i className="fas fa-file-pdf text-2xl text-red-500"></i><span className="text-emerald-800 text-sm flex-1 truncate">{file.name}</span><button onClick={() => setFile(null)} className="text-gray-500 hover:text-gray-700"><i className="fas fa-times"></i></button></div>) : (<label className="flex flex-col items-center gap-2 bg-gray-50 border-2 border-dashed border-gray-300 hover:border-amber-400 p-8 rounded-xl cursor-pointer transition-all"><i className="fas fa-file-pdf text-4xl text-gray-400"></i><span className="text-gray-600 text-sm">Seleccionar PDF del comprobante</span><input type="file" accept="application/pdf" className="hidden" onChange={e => { const f=e.target.files[0]; if(f&&f.type==='application/pdf') setFile(f); }} /></label>)}
+                    {msg && <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{msg}</p>}
+                    <button onClick={submit} disabled={loading} className={`w-full py-3 text-white rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${type==='boleta'?'bg-gradient-to-r from-cyan-500 to-blue-600':'bg-gradient-to-r from-amber-500 to-orange-600'}`}>{loading?<><i className="fas fa-spinner fa-spin"></i> Subiendo...</>:<><i className="fas fa-upload"></i> Subir comprobante</>}</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ── MODAL ASIGNAR MOTO ────────────────────────────
+const AssignModal = ({ order, onClose, onAssign }) => {
+    const [motos, setMotos] = useState([]); const [selected, setSelected] = useState(null); const [loading, setLoading] = useState(false);
+    useEffect(() => { api.getMotorizados().then(data => setMotos(Array.isArray(data) ? data : [])).catch(() => setMotos([])); }, []);
+    const assign = async () => { if (!selected) return; setLoading(true); try { await api.assignMotorizado(order.id, selected); onAssign('✅ Motorizado asignado correctamente'); onClose(); } catch (e) { alert('❌ Error: ' + e.message); } setLoading(false); };
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
+                <div className="p-5 border-b border-gray-200 flex items-center justify-between"><h2 className="text-gray-800 font-bold"><i className="fas fa-motorcycle mr-2 text-cyan-600"></i>Asignar Motorizado</h2><button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
+                <div className="p-5 space-y-3 max-h-72 overflow-y-auto">
+                    {motos.length === 0 ? (<p className="text-gray-600 text-center py-4">No hay motorizados disponibles</p>) : motos.map(m => (<div key={m.id} onClick={() => setSelected(m.id)} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all ${selected===m.id?'border-cyan-500 bg-cyan-50':'border-gray-200 bg-gray-50 hover:bg-gray-100'}`}><div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center"><i className="fas fa-motorcycle text-cyan-600"></i></div><div><p className="text-gray-800 font-medium">{m.username||m.name}</p><p className="text-gray-600 text-xs">{m.phone||m.email||'Sin contacto'}</p></div>{selected===m.id&&<i className="fas fa-check-circle text-cyan-600 ml-auto"></i>}</div>))}
+                </div>
+                <div className="p-5 border-t border-gray-200 flex gap-3"><button onClick={onClose} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button><button onClick={assign} disabled={!selected||loading} className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">{loading?'Asignando...':'Asignar'}</button></div>
+            </div>
+        </div>
+    );
+};
+
+// ── TARJETA PEDIDO ────────────────────────────────
+const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) => {
+    const [showUpload, setShowUpload] = useState(false); const [showInvoice, setShowInvoice] = useState(false); const [showAssign, setShowAssign] = useState(false); const [showPdf, setShowPdf] = useState(null);
+    const si = getStatusInfo(order.status);
+    return (
+        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
+            <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                    <div className="flex items-center gap-2 mb-0.5"><span className="text-gray-800 font-bold">{order.userName}</span><span className={`text-xs px-2 py-0.5 rounded-full ${order.userType==='medico'?'bg-emerald-100 text-emerald-700':'bg-blue-100 text-blue-700'}`}>{order.userType==='medico'?'Clínica':'Cliente'}</span></div>
+                    <p className="text-gray-600 text-xs">{new Date(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
+                    {order.motoName&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
+                </div>
+                <span className={`status-badge ${si.bg} ${si.color} border border-current/20`}><i className={`fas ${si.icon} text-xs`}></i>{si.label}</span>
+            </div>
+            <div className="space-y-2 mb-3">
+                {order.items.map((item,i) => (<div key={i} className="bg-gray-50 rounded-xl p-2.5 flex items-center gap-2 border border-gray-100"><PetPhoto photo={item.pet?.photo} size="md" /><div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p><p className="text-gray-600 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.address}, {item.address?.district}</p></div>{item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}</div>))}
+            </div>
+            {order.comment&&<p className="text-xs text-gray-600 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
+            {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
+            {/* Timeline de estados */}
+            {(() => {
+                const STEPS = [
+                    { id:'pending',           label:'Pedido recibido',        icon:'fa-clipboard-check' },
+                    { id:'assigned',          label:'Motorizado asignado',    icon:'fa-user-check' },
+                    { id:'moto_en_camino',    label:'Motorizado en camino',   icon:'fa-motorcycle' },
+                    { id:'moto_arrived',      label:'Motorizado llegó',       icon:'fa-map-marker-alt' },
+                    { id:'pickup_in_progress',label:'Recogiendo muestra',     icon:'fa-hourglass-start' },
+                    { id:'sample_received',   label:'Muestra recogida',       icon:'fa-vial' },
+                    { id:'arrived_at_lab',    label:'En laboratorio',         icon:'fa-flask' },
+                    { id:'processing',        label:'Procesando muestra',     icon:'fa-cog' },
+                    { id:'results_uploaded',  label:'Resultados listos',      icon:'fa-file-medical' },
+                    { id:'completed',         label:'Completado',             icon:'fa-check-double' },
+                ];
+                const currentIdx = STEPS.findIndex(s => s.id === order.status);
+                // Solo mostrar si hay al menos 1 paso completado
+                if (currentIdx < 0) return null;
+                return (
+                    <div className="mt-3 mb-1">
+                        <div className="flex items-center gap-2 mb-2">
+                            <i className="fas fa-route text-cyan-500 text-xs"></i>
+                            <span className="text-xs font-semibold text-gray-600">Progreso del pedido</span>
+                        </div>
+                        <div className="space-y-0">
+                            {STEPS.map((step, idx) => {
+                                const done    = idx <= currentIdx;
+                                const current = idx === currentIdx;
+                                const isLast  = idx === STEPS.length - 1;
+                                return (
+                                    <div key={step.id} className="flex gap-2.5">
+                                        {/* Línea + círculo */}
+                                        <div className="flex flex-col items-center">
+                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${done ? (current ? 'bg-cyan-500' : 'bg-emerald-500') : 'bg-gray-200'}`}>
+                                                {done
+                                                    ? <i className={`fas ${current ? step.icon : 'fa-check'} text-white`} style={{fontSize:'8px'}}></i>
+                                                    : <i className={`fas ${step.icon} text-gray-400`} style={{fontSize:'8px'}}></i>
+                                                }
+                                            </div>
+                                            {!isLast && <div className={`w-0.5 h-4 ${idx < currentIdx ? 'bg-emerald-400' : 'bg-gray-200'}`}></div>}
+                                        </div>
+                                        {/* Texto */}
+                                        <p className={`text-xs leading-5 ${done ? (current ? 'text-cyan-700 font-semibold' : 'text-gray-700') : 'text-gray-400'} ${!isLast ? 'mb-0' : ''}`}>
+                                            {step.label}
+                                            {current && <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse align-middle"></span>}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
+            <div className="flex flex-wrap gap-2 mt-2">
+                {order.status==='pending'&&<button onClick={()=>setShowAssign(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-user-check mr-1"></i>Asignar moto</button>}
+                {order.status==='pending'&&nightMode&&<button onClick={()=>onStatusChange(order.id,'moto_en_camino')} className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-motorcycle mr-1"></i>Enviar manualmente</button>}
+                {['moto_en_camino','moto_arrived','sample_received','arrived_at_lab'].includes(order.status)&&nightMode&&(()=>{const nextMap={moto_en_camino:'moto_arrived',moto_arrived:'sample_received',sample_received:'arrived_at_lab',arrived_at_lab:'processing'};const nextLabel={moto_en_camino:'Llegó a destino',moto_arrived:'Muestra recogida',sample_received:'En laboratorio',arrived_at_lab:'Procesar'};return(<button onClick={()=>onStatusChange(order.id,nextMap[order.status])} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-arrow-right mr-1"></i>{nextLabel[order.status]}</button>);})()}
+                {order.status==='arrived_at_lab'&&!nightMode&&<button onClick={()=>onStatusChange(order.id,'processing')} className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-flask mr-1"></i>Procesar</button>}
+                {order.status==='processing'&&<button onClick={()=>setShowUpload(true)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-file-upload mr-1"></i>Subir resultados</button>}
+                {order.status==='results_uploaded'&&<button onClick={()=>onStatusChange(order.id,'completed')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-paper-plane mr-1"></i>Liberar resultados</button>}
+                {!order.invoicePdf&&['results_uploaded','completed'].includes(order.status)&&<button onClick={()=>setShowInvoice(true)} className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-receipt mr-1"></i>Subir comprobante</button>}
+                {order.invoicePdf&&<button onClick={()=>setShowPdf({url:order.invoicePdf,title:order.documentType==='boleta'?'Boleta':'Factura',sub:order.userName,icon:'fa-receipt'})} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors border border-gray-200"><i className="fas fa-eye mr-1"></i>Ver comprobante</button>}
+            </div>
+            {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
+            {showInvoice&&<InvoiceModal order={order} onClose={()=>setShowInvoice(false)} onSuccess={onSuccess}/>}
+            {showAssign&&<AssignModal order={order} onClose={()=>setShowAssign(false)} onAssign={onSuccess}/>}
+            {showPdf&&<PdfModal title={showPdf.title} subtitle={showPdf.sub} icon={showPdf.icon||'fa-file-pdf'} pdfUrl={showPdf.url} onClose={()=>setShowPdf(null)}/>}
+        </div>
+    );
+};
+
+// ── SECCIÓN INICIO ────────────────────────────────
+const SeccionInicio = ({ orders, user, onGoTo }) => {
+    const [selPdf, setSelPdf] = useState(null);
+    const pending   = orders.filter(o => o.status !== 'completed');
+    const completed = orders.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
+    const lastResultOrder  = completed.find(o => o.items.some(it => it.pdfData));
+    const lastInvoiceOrder = completed.find(o => o.invoicePdf);
+    return (
+        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+            <h1 className="text-2xl font-bold text-gray-800 mb-0.5">¡Hola, {user?.username || 'Admin'}!</h1>
+            <p className="text-gray-600 text-sm mb-6">Resumen de tu actividad</p>
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">⏳ Pendientes{pending.length>0&&<span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{pending.length}</span>}</h2>
+                    {pending.length>2&&<button onClick={()=>onGoTo('pedidos')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button>}
+                </div>
+                {pending.length===0?(
+                    <div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-check-circle text-3xl text-emerald-500 mb-2 block"></i><p className="text-gray-600 text-sm">Sin pedidos pendientes</p></div>
+                ):(
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {pending.slice(0,4).map(order=>{const si=getStatusInfo(order.status);return(<div key={order.id} onClick={()=>onGoTo('pedidos',order.id)} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-cyan-400 hover:shadow-md transition-all"><div className="flex items-center gap-2 mb-2"><div className={`w-7 h-7 rounded-lg flex items-center justify-center ${si.bg}`}><i className={`fas ${si.icon} ${si.color} text-xs`}></i></div><p className="text-gray-800 font-semibold text-sm truncate flex-1">{order.userName}</p></div><div className="space-y-1 mb-2">{order.items.slice(0,2).map((item,i)=>(<div key={i} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1"><PetPhoto photo={item.pet?.photo} size="sm"/><p className="text-gray-700 text-xs truncate">{item.exam?.name}</p></div>))}</div><span className={`status-badge ${si.bg} ${si.color} text-xs`}><i className={`fas ${si.icon} text-xs`}></i>{si.label}</span></div>);})}
+                    </div>
+                )}
+            </div>
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟣 Último resultado</h2><button onClick={()=>onGoTo('resultados')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
+                {!lastResultOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-file-medical text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay resultados aún</p></div>):(() => {const item=lastResultOrder.items.find(it=>it.pdfData)||lastResultOrder.items[0];return(<div onClick={()=>item.pdfData&&setSelPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)+' · '+lastResultOrder.userName})} className={`bg-white rounded-xl p-4 border border-gray-200 ${item.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="flex items-center gap-3"><PetPhoto photo={item.pet?.photo} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{getPetFullName(item.pet)} <span className="text-gray-600 font-normal">· {lastResultOrder.userName}</span></p><p className="text-gray-600 text-xs truncate mt-0.5">{item.exam?.name}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastResultOrder.completedAt||lastResultOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{item.pdfData&&<div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div>}</div></div>);})()}
+            </div>
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟡 Último comprobante</h2><button onClick={()=>onGoTo('facturacion')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
+                {!lastInvoiceOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay comprobantes aún</p></div>):(<div onClick={()=>setSelPdf({url:lastInvoiceOrder.invoicePdf,title:lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura',sub:lastInvoiceOrder.userName,icon:lastInvoiceOrder.documentType==='boleta'?'fa-receipt':'fa-file-invoice-dollar'})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${lastInvoiceOrder.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${lastInvoiceOrder.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'}`}></i></div><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura'} <span className="text-gray-600 font-normal">· {lastInvoiceOrder.items?.[0]?.exam?.name||''}</span></p><p className="text-gray-600 text-xs mt-0.5">{getPetFullName(lastInvoiceOrder.items?.[0]?.pet)} · {lastInvoiceOrder.userName}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastInvoiceOrder.completedAt||lastInvoiceOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div><i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i></div></div>)}
+            </div>
+            {selPdf&&<PdfModal title={selPdf.title} subtitle={selPdf.sub} icon={selPdf.icon||'fa-file-pdf'} pdfUrl={selPdf.url} onClose={()=>setSelPdf(null)}/>}
+        </div>
+        </div>
+    );
+};
+
+// ── SECCIÓN PEDIDOS ───────────────────────────────
+const SeccionPedidos = ({ orders, nightMode, onStatusChange, onSuccess, onRefresh }) => {
+    const [tab, setTab] = useState('pending'); const [search, setSearch] = useState('');
+    const pending   = orders.filter(o => o.status !== 'completed');
+    const completed = orders.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
+    const list = (tab==='pending'?pending:completed).filter(o => !search||o.userName.toLowerCase().includes(search.toLowerCase())||o.items.some(it=>it.exam?.name?.toLowerCase().includes(search.toLowerCase())||it.pet?.name?.toLowerCase().includes(search.toLowerCase())));
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                        <button onClick={()=>setTab('pending')} className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab==='pending'?'bg-blue-600 text-white':'text-gray-700 hover:text-gray-900'}`}>Pendientes{pending.length>0&&<span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pending.length}</span>}</button>
+                        <button onClick={()=>setTab('completed')} className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab==='completed'?'bg-blue-600 text-white':'text-gray-700 hover:text-gray-900'}`}><i className="fas fa-history mr-1"></i>Historial</button>
+                    </div>
+                    <div className="relative flex-1 min-w-48"><i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar pedido, mascota, examen..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-blue-500 focus:outline-none"/></div>
+                    <button onClick={onRefresh} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors flex-shrink-0"><i className="fas fa-sync-alt text-sm"></i></button>
+                    {nightMode&&<div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5"><i className="fas fa-moon text-red-500 text-xs"></i><span className="text-red-700 text-xs font-semibold">Modo Manual ON</span></div>}
+                </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                {list.length===0?(<div className="flex flex-col items-center justify-center h-64"><i className={`fas ${tab==='pending'?'fa-inbox':'fa-history'} text-5xl mb-3 text-gray-300`}></i><p className="text-gray-600">{tab==='pending'?'Sin pedidos pendientes':'Sin pedidos completados'}</p></div>):(
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-6">{list.map(o=><OrderCard key={o.id} order={o} nightMode={nightMode} onStatusChange={onStatusChange} onSuccess={onSuccess}/>)}</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ── SECCIÓN PACIENTES ─────────────────────────────
+const SeccionPacientes = ({ orders }) => {
+    const [search, setSearch] = useState(''); const [selPet, setSelPet] = useState(null); const [selExam, setSelExam] = useState(null);
+    const allPets = []; const seen = new Set();
+    orders.forEach(o => { o.items.forEach(it => { const key = it.pet?.id||it.pet?.name; if (key&&!seen.has(key)) { seen.add(key); allPets.push({...it.pet, ownerClient:o.userName, orderId:o.id}); } }); });
+    const filtered = allPets.filter(p => !search||p.name?.toLowerCase().includes(search.toLowerCase())||p.owner?.toLowerCase().includes(search.toLowerCase())||p.ownerClient?.toLowerCase().includes(search.toLowerCase()));
+    if (selExam) return <PdfModal title={selExam.type} subtitle={selExam.petName} icon="fa-file-pdf" pdfUrl={selExam.pdfData} onClose={()=>setSelExam(null)}/>;
+    if (selPet) {
+        const petOrders = orders.filter(o=>o.items.some(it=>it.pet?.id===selPet.id||it.pet?.name===selPet.name));
+        const exams = petOrders.flatMap(o=>o.items.filter(it=>it.pet?.id===selPet.id||it.pet?.name===selPet.name).map(it=>({...it,orderId:o.id,orderDate:o.date})));
+        return (
+            <div className="flex flex-col h-full">
+                <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><button onClick={()=>setSelPet(null)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors"><i className="fas fa-arrow-left text-sm"></i></button><PetPhoto photo={selPet.photo} size="xl"/><div><p className="text-gray-800 font-bold">{selPet.name}</p><p className="text-gray-600 text-sm">{selPet.owner?`Dueño: ${selPet.owner}`:(selPet.ownerClient&&selPet.ownerClient!=='Pedido web')?`Cliente: ${selPet.ownerClient}`:''}</p></div></div></div>
+                <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                    {exams.length===0?(<div className="text-center py-12"><i className="fas fa-folder-open text-4xl mb-2 block text-gray-300"></i><p className="text-gray-600">Sin exámenes</p></div>):(
+                        <div className="space-y-3">{exams.map((ex,i)=>(<div key={i} onClick={()=>ex.pdfData&&setSelExam({type:ex.exam?.name,petName:selPet.name,pdfData:ex.pdfData})} className={`bg-white rounded-xl p-4 flex items-center gap-4 border border-gray-200 ${ex.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-pdf text-xl text-purple-600"></i></div><div className="flex-1"><p className="text-gray-800 font-semibold text-sm">{ex.exam?.name}</p><p className="text-gray-600 text-xs">{new Date(ex.orderDate).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{ex.pdfData&&<i className="fas fa-eye text-purple-600 text-sm"></i>}</div>))}</div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><span className="text-emerald-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-paw"></i>Pacientes<span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">{allPets.length}</span></span><div className="relative flex-1"><i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nombre o dueño..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-emerald-500 focus:outline-none"/></div></div></div>
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar"><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">{filtered.map((pet,i)=>(<div key={i} onClick={()=>setSelPet(pet)} className="bg-white rounded-xl p-4 flex items-center gap-3 border border-gray-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all"><PetPhoto photo={pet.photo} size="xl"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-medium truncate">{pet.name}</p>{pet.owner?<p className="text-gray-600 text-xs truncate">Dueño: {pet.owner}</p>:(pet.ownerClient&&pet.ownerClient!=='Pedido web'&&pet.ownerClient!=='Cliente')?<p className="text-gray-600 text-xs truncate">Cliente: {pet.ownerClient}</p>:null}</div><i className="fas fa-chevron-right text-gray-400 text-xs flex-shrink-0"></i></div>))}</div></div>
+        </div>
+    );
+};
+
+// ── SECCIÓN RESULTADOS ────────────────────────────
+const SeccionResultados = ({ orders }) => {
+    const [search, setSearch] = useState(''); const [selPdf, setSelPdf] = useState(null);
+    const allExams = orders
+        .filter(o => ['results_uploaded','completed','processing','arrived_at_lab'].includes(o.status))
+        .flatMap(o => o.items
+            .filter(it => it.pdfData || it.pdfUrl)
+            .map(it => ({
+                pdfData: it.pdfData || it.pdfUrl,
+                examName: it.exam?.name,
+                petName: getPetFullName(it.pet),
+                petPhoto: it.pet?.photo,
+                clientName: o.userName,
+                date: o.completedAt || o.date,
+                orderId: o.id,
+                status: o.status,
+            }))
+        ).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const filtered = allExams.filter(ex=>!search||ex.examName?.toLowerCase().includes(search.toLowerCase())||ex.petName?.toLowerCase().includes(search.toLowerCase())||ex.clientName?.toLowerCase().includes(search.toLowerCase()));
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><span className="text-purple-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-file-medical"></i>Resultados</span><div className="relative flex-1"><i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar examen, paciente o cliente..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-purple-500 focus:outline-none"/></div></div></div>
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                {filtered.length===0?(<div className="text-center py-12"><i className="fas fa-file-medical text-4xl mb-2 block text-gray-300"></i><p className="text-gray-600">Sin resultados</p></div>):(
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">{filtered.map((ex,i)=>(<div key={i} onClick={()=>setSelPdf(ex)} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-purple-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><PetPhoto photo={ex.petPhoto} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{ex.petName}</p><p className="text-gray-600 text-xs truncate">{ex.examName}</p><p className="text-gray-500 text-xs">{new Date(ex.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'})}</p></div><div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div></div></div>))}</div>
+                )}
+            </div>
+            {selPdf&&<PdfModal title={selPdf.examName} subtitle={`${selPdf.petName} · ${selPdf.clientName}`} icon="fa-file-pdf" pdfUrl={selPdf.pdfData} onClose={()=>setSelPdf(null)}/>}
+        </div>
+    );
+};
+
+// ── SECCIÓN FACTURACIÓN (con filtro por fecha) ────
+const SeccionFacturacion = ({ orders }) => {
+    const [search, setSearch]         = useState('');
+    const [filterDay, setFilterDay]   = useState('');
+    const [filterMonth, setFilterMonth] = useState('');
+    const [filterYear, setFilterYear]   = useState('');
+    const [selPdf, setSelPdf] = useState(null);
+
+    const invoices = orders.filter(o => o.invoicePdf).sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
+
+    const years = [...new Set(invoices.map(o => new Date(o.completedAt||o.date).getFullYear()))].sort((a,b)=>b-a);
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const dias  = Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0'));
+
+    const filtered = invoices.filter(o => {
+        const d = new Date(o.completedAt||o.date);
+        if (search      && !o.userName.toLowerCase().includes(search.toLowerCase())) return false;
+        if (filterDay   && String(d.getDate()).padStart(2,'0') !== filterDay) return false;
+        if (filterMonth && String(d.getMonth()+1).padStart(2,'0') !== filterMonth) return false;
+        if (filterYear  && String(d.getFullYear()) !== filterYear) return false;
+        return true;
+    });
+
+    const anyFilter = search || filterDay || filterMonth || filterYear;
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-amber-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-invoice-dollar"></i>Facturación</span>
+                    {/* Buscador */}
+                    <div className="relative flex-1 min-w-36">
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..."
+                            className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-amber-500 focus:outline-none"/>
+                    </div>
+                    {/* Día */}
+                    <select value={filterDay} onChange={e=>setFilterDay(e.target.value)}
+                        className="px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-amber-500 focus:outline-none">
+                        <option value="">Día</option>
+                        {dias.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    {/* Mes */}
+                    <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}
+                        className="px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-amber-500 focus:outline-none">
+                        <option value="">Mes</option>
+                        {meses.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+                    </select>
+                    {/* Año */}
+                    <select value={filterYear} onChange={e=>setFilterYear(e.target.value)}
+                        className="px-3 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-amber-500 focus:outline-none">
+                        <option value="">Año</option>
+                        {years.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                    </select>
+                    {anyFilter&&(
+                        <button onClick={()=>{setSearch('');setFilterDay('');setFilterMonth('');setFilterYear('');}}
+                            className="px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-100 transition-colors whitespace-nowrap">
+                            <i className="fas fa-times mr-1"></i>Limpiar
+                        </button>
+                    )}
+                </div>
+                {anyFilter && (
+                    <p className="text-xs text-amber-700 mt-2 font-medium"><i className="fas fa-filter mr-1"></i>{filtered.length} de {invoices.length} comprobantes</p>
+                )}
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                {filtered.length===0?(<div className="text-center py-12"><i className="fas fa-receipt text-4xl mb-2 block text-gray-300"></i><p className="text-gray-600">Sin comprobantes</p></div>):(
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">
+                        {filtered.map(o=>(<div key={o.id} onClick={()=>setSelPdf({url:o.invoicePdf,type:o.documentType,client:o.userName,date:o.completedAt||o.date})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${o.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${o.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} text-lg`}></i></div>
+                                <div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{o.userName}</p><p className="text-gray-600 text-xs">{o.documentType==='boleta'?'Boleta':'Factura'}</p><p className="text-gray-500 text-xs">{new Date(o.completedAt||o.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'})}</p></div>
+                                <i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i>
+                            </div>
+                        </div>))}
+                    </div>
+                )}
+            </div>
+            {selPdf&&<PdfModal title={selPdf.type==='boleta'?'Boleta':'Factura'} subtitle={selPdf.client} icon={selPdf.type==='boleta'?'fa-receipt':'fa-file-invoice-dollar'} pdfUrl={selPdf.url} onClose={()=>setSelPdf(null)}/>}
+        </div>
+    );
+};
+
+// ── SECCIÓN CATÁLOGO (con modo edición de precios) ─
+const SeccionCatalogo = () => {
+    const [catalog, setCatalog]     = useState(CATALOG_DEFAULT);
+    const [precios, setPrecios]     = useState({});
+    const [editados, setEditados]   = useState({});
+    const [filtro, setFiltro]       = useState('medico');
+    const [buscar, setBuscar]       = useState('');
+    const [modoEdicion, setModoEdicion] = useState(false); // ← NUEVO: modo edición
+    const [showForm, setShowForm]   = useState(false);
+    const [form, setForm]           = useState({ nombre:'', categoria:'', tipo:'medico' });
+    const [saving, setSaving]       = useState(false);
+    const [guardando, setGuardando] = useState(false);
+    const [msg, setMsg]             = useState('');
+    const [confirm, setConfirm]     = useState(null);
+
+    useEffect(() => {
+        api.getCatalog().then(data => { if (Array.isArray(data) && data.length > 0) setCatalog(data); }).catch(() => {});
+        api.getPrecios().then(data => {
+            if (Array.isArray(data)) { const map = {}; data.forEach(p => { map[p.examenId] = p.precio; }); setPrecios(map); }
+        }).catch(() => {});
+    }, []);
+
+    const filteredCat = catalog.filter(e => e.tipo === filtro && (!buscar || e.nombre.toLowerCase().includes(buscar.toLowerCase()) || e.categoria.toLowerCase().includes(buscar.toLowerCase())));
+    const categorias  = [...new Set(filteredCat.map(e => e.categoria))].sort();
+    const cambios     = Object.keys(editados).length;
+
+    const guardar = async () => {
+        if (!cambios) return;
+        setGuardando(true);
+        try {
+            const dtos = Object.entries(editados).map(([id, precio]) => { const ex = catalog.find(e => e.id === id) || { nombre: id, tipo: filtro }; return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio }; });
+            await api.savePrecios(dtos);
+            setPrecios(p => ({ ...p, ...editados }));
+            setEditados({});
+            setMsg('✅ Precios guardados correctamente');
+            setModoEdicion(false); // vuelve a modo lectura
+        } catch (e) { setMsg('❌ Error: ' + e.message); }
+        setGuardando(false);
+        setTimeout(() => setMsg(''), 4000);
+    };
+
+    const cancelarEdicion = () => { setEditados({}); setModoEdicion(false); };
+
+    const addExamen = async () => {
+        if (!form.nombre.trim() || !form.categoria.trim()) { setMsg('Completa nombre y categoría'); return; }
+        setSaving(true);
+        const newEx = { id: 'X' + Date.now(), ...form, nombre: form.nombre.trim(), categoria: form.categoria.trim() };
+        try { const created = await api.createExamen(newEx); setCatalog(prev => [...prev, created.id ? created : newEx]); } catch { setCatalog(prev => [...prev, newEx]); }
+        setShowForm(false); setForm({ nombre:'', categoria:'', tipo:'medico' });
+        setMsg('✅ Examen agregado'); setSaving(false);
+        setTimeout(() => setMsg(''), 3000);
+    };
+
+    const deleteExamen = async (id) => {
+        try { await api.deleteExamen(id); } catch {}
+        setCatalog(prev => prev.filter(e => e.id !== id));
+        setEditados(prev => { const n={...prev}; delete n[id]; return n; });
+        setConfirm(null); setMsg('✅ Examen eliminado');
+        setTimeout(() => setMsg(''), 3000);
+    };
+
+    return (
+        <div className="flex flex-col h-full">
+            {/* Barra superior */}
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-indigo-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-list-alt"></i>Catálogo</span>
+                        {/* Tabs Médicos / Dueños */}
+                        <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                            {[{k:'medico',label:'Médicos'},{k:'dueno',label:'Dueños'}].map(({k,label}) => (
+                                <button key={k} onClick={() => setFiltro(k)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filtro===k?'bg-indigo-600 text-white':'text-gray-700 hover:text-gray-900'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        {/* Buscador */}
+                        <div className="relative">
+                            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                            <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar examen..."
+                                className="pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-indigo-500 focus:outline-none w-44"/>
+                        </div>
+                    </div>
+                    {/* Botones de acción */}
+                    <div className="flex items-center gap-2">
+                        {!modoEdicion ? (
+                            <>
+                                {/* Modo lectura: solo Editar Precios */}
+                                <button onClick={() => setModoEdicion(true)}
+                                    className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 bg-gray-500 hover:bg-amber-600 text-white transition-colors">
+                                    <i className="fas fa-edit"></i>Editar
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {/* Modo edición: solo Cancelar + Guardar */}
+                                <button onClick={cancelarEdicion}
+                                    className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">
+                                    <i className="fas fa-times"></i>Cancelar
+                                </button>
+                                <button onClick={guardar} disabled={guardando}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${cambios>0?'bg-green-600 hover:bg-green-700 text-white':'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                                    <i className="fas fa-save"></i>
+                                    {guardando ? 'Guardando...' : `Guardar${cambios>0?` (${cambios})`:''}` }
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                {/* Banner modo edición */}
+                {modoEdicion && (
+                    <div className="mt-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                        <i className="fas fa-pencil-alt text-amber-600 text-sm"></i>
+                        <p className="text-amber-800 text-sm font-medium">Modo edición activo — modifica los precios y presiona <strong>Guardar</strong></p>
+                        {cambios > 0 && <span className="ml-auto bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{cambios} cambios</span>}
+                    </div>
+                )}
+            </div>
+
+            {/* Contenido */}
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
+                {msg && <div className={`mb-4 px-4 py-2.5 rounded-xl text-sm font-medium ${msg.startsWith('✅')?'bg-emerald-50 border border-emerald-300 text-emerald-800':msg.startsWith('❌')?'bg-red-50 border border-red-300 text-red-700':'bg-amber-50 border border-amber-300 text-amber-800'}`}>{msg}</div>}
+
+                <div className="space-y-4 pb-6">
+                    {categorias.filter(cat => filteredCat.some(e => e.categoria === cat)).map((cat, catIdx) => (
+                        <div key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                            <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                                <h3 className="text-gray-800 font-semibold text-sm flex items-center gap-2">
+                                    <i className="fas fa-folder text-indigo-500 text-xs"></i>
+                                    {cat}
+                                    <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-semibold">
+                                        {filteredCat.filter(e=>e.categoria===cat).length}
+                                    </span>
+                                </h3>
+                                {modoEdicion && catIdx === 0 && (
+                                    <button onClick={() => setShowForm(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors">
+                                        <i className="fas fa-plus" style={{fontSize:'9px'}}></i>Agregar
+                                    </button>
+                                )}
+                            </div>
+                            <div className="divide-y divide-gray-100">
+                                {filteredCat.filter(e => e.categoria === cat).map(ex => {
+                                    // Precio: prioridad API > CATALOG_DEFAULT
+                                    const precioApi     = precios[ex.id];
+                                    const precioDefault = ex.precio; // precio del CATALOG_DEFAULT
+                                    const precioMostrar = (precioApi !== undefined && precioApi !== null) ? precioApi : (precioDefault ?? null);
+                                    // Valor para el input en modo edición
+                                    const val    = editados[ex.id] !== undefined ? editados[ex.id] : (precioMostrar ?? 0);
+                                    const edited = editados[ex.id] !== undefined;
+                                    return (
+                                        <div key={ex.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-gray-800 text-sm font-medium">{ex.nombre}</span>
+                                                <span className="text-gray-500 text-xs ml-2">{ex.id}</span>
+                                            </div>
+                                            {modoEdicion ? (
+                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    <span className="text-gray-600 text-xs font-medium">S/</span>
+                                                    <input type="number" min="0" step="1" value={val}
+                                                        onChange={e => setEditados(prev => ({ ...prev, [ex.id]: parseFloat(e.target.value)||0 }))}
+                                                        className={`w-24 px-2 py-1.5 rounded-lg text-sm text-right focus:outline-none transition-all border ${edited?'bg-amber-50 border-amber-400 text-amber-800 font-semibold':'bg-white border-gray-300 text-gray-800 focus:border-green-500'}`}/>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                    <span className="text-gray-600 text-xs font-medium">S/</span>
+                                                    <span className={`text-sm font-bold min-w-12 text-right ${precioMostrar && precioMostrar > 0 ? 'text-gray-800' : 'text-gray-400'}`}>
+                                                        {precioMostrar && precioMostrar > 0 ? precioMostrar : '0'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* Eliminar solo en modo edición */}
+                                            {modoEdicion && (
+                                                <button onClick={() => setConfirm(ex.id)}
+                                                    className="w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg flex items-center justify-center transition-all flex-shrink-0">
+                                                    <i className="fas fa-trash-alt text-xs"></i>
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Modal agregar examen */}
+            {showForm && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
+                        <div className="p-5 border-b border-gray-200 flex items-center justify-between"><h2 className="text-gray-800 font-bold"><i className="fas fa-plus-circle mr-2 text-indigo-600"></i>Nuevo Examen</h2><button onClick={() => setShowForm(false)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
+                        <div className="p-5 space-y-4">
+                            <div><label className="text-gray-700 text-xs font-medium block mb-1">Tipo de usuario</label><div className="flex gap-2">{[{k:'medico',label:'Médico/Clínica'},{k:'dueno',label:'Dueño'}].map(({k,label}) => (<button key={k} onClick={() => setForm(f=>({...f,tipo:k}))} className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${form.tipo===k?'bg-indigo-600 text-white':'bg-gray-100 text-gray-700'}`}>{label}</button>))}</div></div>
+                            <div><label className="text-gray-700 text-xs font-medium block mb-1">Nombre del examen *</label><input value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))} placeholder="Ej: Hemograma Completo" className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-sm focus:border-indigo-500 focus:outline-none"/></div>
+                            <div><label className="text-gray-700 text-xs font-medium block mb-1">Categoría *</label><input value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))} placeholder="Ej: Hematología" list="cats-list" className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-sm focus:border-indigo-500 focus:outline-none"/><datalist id="cats-list">{[...new Set(CATALOG_DEFAULT.map(e=>e.categoria))].map(c=><option key={c} value={c}/>)}</datalist></div>
+                            <div className="flex gap-3 pt-1"><button onClick={() => setShowForm(false)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button><button onClick={addExamen} disabled={saving} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold disabled:opacity-50">{saving?'Guardando...':'Agregar'}</button></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal confirmar eliminar */}
+            {confirm && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm border border-gray-200 shadow-2xl p-6 text-center">
+                        <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><i className="fas fa-trash-alt text-red-500 text-2xl"></i></div>
+                        <p className="text-gray-800 font-bold mb-1">¿Eliminar examen?</p>
+                        <p className="text-gray-600 text-sm mb-5">Esta acción no se puede deshacer</p>
+                        <div className="flex gap-3"><button onClick={() => setConfirm(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button><button onClick={() => deleteExamen(confirm)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">Eliminar</button></div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ── VISTA MOTORIZADO ──────────────────────────────
+const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, setSuccess }) => {
+    const myOrders = orders.filter(o => ['assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received'].includes(o.status));
+    const activeOrderId = myOrders[0]?.id;
+    useEffect(() => {
+        if (!activeOrderId) return; let gpsTimer = null;
+        const sendGps = (pos) => { api.call('PUT', `/api/Orders/${activeOrderId}/location`, { lat: pos.coords.latitude, lng: pos.coords.longitude }).catch(()=>{}); };
+        if (navigator.geolocation) { navigator.geolocation.getCurrentPosition(pos => { sendGps(pos); gpsTimer = setInterval(() => navigator.geolocation.getCurrentPosition(sendGps, ()=>{}), 10000); }, ()=>{}); }
+        return () => { if (gpsTimer) clearInterval(gpsTimer); };
+    }, [activeOrderId]);
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+                <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"><i className="fas fa-motorcycle text-white"></i></div><div><p className="font-bold text-gray-800 text-sm">{currentUser?.username||'Motorizado'}</p><p className="text-xs text-gray-600">INULABORATORIOS</p></div></div>
+                <button onClick={onLogout} className="text-xs text-gray-600 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"><i className="fas fa-sign-out-alt mr-1"></i>Salir</button>
+            </div>
+            <div className="p-4 max-w-lg mx-auto space-y-4 pb-10">
+                {success&&<div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-3 rounded-xl text-sm flex items-center gap-2"><i className="fas fa-check-circle text-emerald-600"></i>{success}</div>}
+                {myOrders.length===0?(
+                    <div className="bg-white rounded-2xl p-12 text-center mt-4 border border-gray-200 shadow-sm"><div className="text-6xl mb-4">✅</div><p className="text-gray-800 font-semibold text-lg">Sin pedidos activos</p><p className="text-gray-600 text-sm mt-1">Los pedidos aparecerán aquí automáticamente</p></div>
+                ):myOrders.map(order=>{
+                    const si=getStatusInfo(order.status); const addr=order.items[0]?.address;
+                    const nextMap={assigned:'moto_en_camino',moto_en_camino:'moto_arrived',moto_arrived:'sample_received',pickup_in_progress:'sample_received',sample_received:'arrived_at_lab'};
+                    const nextLabel={assigned:'Estoy en camino 🏍️',moto_en_camino:'Ya llegué al cliente 📍',moto_arrived:'Muestra recogida — Voy al lab 🧪',pickup_in_progress:'Muestra recogida — Voy al lab 🧪',sample_received:'Llegué al laboratorio 🏥'};
+                    return (
+                        <div key={order.id} className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md">
+                            <div className={`${si.bg} px-4 py-2 flex items-center gap-2 border-b border-gray-200`}><i className={`fas ${si.icon} ${si.color} text-sm`}></i><span className={`text-sm font-bold ${si.color}`}>{si.label}</span><span className="ml-auto text-xs text-gray-600">{new Date(order.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
+                            <div className="p-4">
+                                <p className="font-bold text-gray-800 text-base mb-0.5">{order.userName}</p>
+                                <p className="text-xs text-gray-600 mb-3">{order.userType==='medico'?'🏥 Clínica':'🐾 Dueño de mascota'}</p>
+                                {addr&&<div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-100"><p className="text-cyan-700 text-xs font-semibold mb-1"><i className="fas fa-map-marker-alt mr-1"></i>Dirección de recojo</p><p className="text-gray-800 text-sm font-medium">{addr.address}</p><p className="text-gray-600 text-xs">{addr.district}{addr.reference?' · '+addr.reference:''}</p></div>}
+                                <div className="space-y-2 mb-4">{order.items.map((item,i)=>(<div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2 border border-gray-100"><PetPhoto photo={item.pet?.photo} size="md"/><div className="flex-1 min-w-0"><p className="text-gray-800 text-sm font-medium truncate">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs truncate">{item.exam?.name}</p></div></div>))}</div>
+                                {nextMap[order.status]&&<button onClick={async()=>{await onStatusChange(order.id,nextMap[order.status]);setSuccess('✅ Estado actualizado');setTimeout(()=>setSuccess(''),3000);}} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all">{nextLabel[order.status]}</button>}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ── APP PRINCIPAL ─────────────────────────────────
+const App = () => {
+    const [auth, setAuth]           = useState(false);
+    const [user, setUser]           = useState(null);
+    const [orders, setOrders]       = useState([]);
+    const [nightMode, setNightMode] = useState(false);
+    const [view, setView]           = useState('inicio');
+    const [loading, setLoading]     = useState(true);
+    const [loginErr, setLoginErr]   = useState('');
+    const [username, setUsername]   = useState('');
+    const [password, setPassword]   = useState('');
+    const [success, setSuccess]     = useState('');
+    const [motoSuccess, setMotoSuccess] = useState('');
+
+    useEffect(() => {
+        const token = localStorage.getItem('inulab_token');
+        if (token) { api.me().then(u => { setUser(u); setAuth(true); loadOrders(); loadNightMode(); }).catch(() => { localStorage.removeItem('inulab_token'); }).finally(() => setLoading(false)); }
+        else { setLoading(false); }
+    }, []);
+
+    useEffect(() => { if (!auth) return; const t = setInterval(loadOrders, 5000); return () => clearInterval(t); }, [auth]);
+
+    const loadOrders = async () => { try { const data = await api.getOrders(); const raw = Array.isArray(data) ? data : (data.orders || []); setOrders(raw.map(normalizeOrder)); } catch (e) { console.error('Error cargando pedidos:', e.message); } };
+    const loadNightMode = async () => { try { const data = await api.getNightMode(); setNightMode(!!data?.active); } catch {} };
+    const toggleNightMode = async () => { const next = !nightMode; setNightMode(next); try { await api.setNightMode(next); } catch {} };
+
+    const handleLogin = async (e) => {
+        e.preventDefault(); setLoginErr('');
+        try {
+            const data = await api.login(username, password);
+            if (data.token) { localStorage.setItem('inulab_token', data.token); const u = data.user || data; setUser(u); setAuth(true); await loadOrders(); await loadNightMode(); }
+            else throw new Error('Sin token');
+        } catch { setLoginErr('Credenciales incorrectas o error de conexión'); }
+    };
+
+    const handleLogout = () => { localStorage.removeItem('inulab_token'); setAuth(false); setUser(null); setOrders([]); setView('pedidos'); setUsername(''); setPassword(''); };
+
+    const handleStatusChange = async (id, status) => {
+        try { await api.updateStatus(id, status); await loadOrders(); setSuccess('✅ Estado actualizado'); setTimeout(() => setSuccess(''), 3000); }
+        catch (e) { setSuccess('❌ Error: ' + e.message); setTimeout(() => setSuccess(''), 4000); }
+    };
+
+    if (loading) return (<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent mx-auto mb-4"></div><p className="text-gray-600 text-sm">Iniciando...</p></div></div>);
+
+    if (!auth) return (
+        <div className="min-h-screen flex items-center justify-center p-4 login-wrapper">
+            <div className="w-full max-w-md">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-200">
+                    <div className="text-center mb-8">
+                        <img src="logo_inulaboratorios.jpg" alt="Logo" className="w-20 h-20 rounded-2xl mx-auto mb-4 object-cover shadow-lg" onError={e=>{e.target.style.display='none';}}/>
+                        <h1 className="text-2xl font-bold text-gray-800 tracking-wide">INULABORATORIOS</h1>
+                        <p className="text-gray-600 text-sm mt-1">Panel de Administración</p>
+                    </div>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <input type="text" value={username} onChange={e=>setUsername(e.target.value)} placeholder="Usuario" autoComplete="username" className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 focus:border-cyan-500 focus:outline-none transition-colors"/>
+                        <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Contraseña" autoComplete="current-password" className="w-full px-4 py-3.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 focus:border-cyan-500 focus:outline-none transition-colors"/>
+                        {loginErr&&<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{loginErr}</div>}
+                        <button type="submit" className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg">Iniciar Sesión</button>
+                    </form>
+                    <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-600 font-semibold mb-2">Prueba con:</p>
+                        <p className="text-xs text-gray-700"><span className="text-amber-600 font-semibold">Admin:</span> admin / admin123</p>
+                        <p className="text-xs text-gray-700 mt-1"><span className="text-cyan-600 font-semibold">Moto:</span> motorizado / moto123</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const isMotorizado = user?.role === 'motorizado' || user?.type === 'motorizado';
+    if (isMotorizado) return <VistaMoto orders={orders} currentUser={user} onStatusChange={handleStatusChange} onLogout={handleLogout} success={motoSuccess} setSuccess={setMotoSuccess}/>;
+
+    const pendingCount = orders.filter(o => o.status !== 'completed').length;
+    const NAV = [
+        { id:'inicio',     label:'Inicio',     icon:'fa-home',           color:'text-cyan-600',    active:'bg-cyan-600'    },
+        { id:'pedidos',    label:'Pedidos',    icon:'fa-clipboard-list', color:'text-blue-600',    active:'bg-blue-600',   badge: pendingCount||null },
+        { id:'pacientes',  label:'Pacientes',  icon:'fa-paw',            color:'text-emerald-600', active:'bg-emerald-600', badge: (() => { const s=new Set(); orders.forEach(o=>o.items.forEach(it=>{if(it.pet?.id||it.pet?.name)s.add(it.pet?.id||it.pet?.name);})); return s.size||null; })() },
+        { id:'resultados', label:'Resultados', icon:'fa-file-medical',   color:'text-purple-600',  active:'bg-purple-600'  },
+        { id:'facturacion',label:'Facturación',icon:'fa-receipt',        color:'text-amber-600',   active:'bg-amber-600'   },
+        { id:'catalogo',   label:'Catálogo',   icon:'fa-list-alt',       color:'text-indigo-600',  active:'bg-indigo-600'  },
+    ];
+
+    return (
+        <div className="min-h-screen bg-gray-100 flex flex-col" style={{height:'100vh'}}>
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={()=>setView('inicio')}>
+                    <img src="logo_inulaboratorios.jpg" alt="Logo" className="h-9 rounded-xl object-cover shadow" onError={e=>{e.target.style.display='none';}}/>
+                    <span className="text-base font-light text-gray-500 tracking-widest hidden sm:block">INULABORATORIOS</span>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-xl border border-gray-200">
+                        <span className="text-base">🏍️</span>
+                        <span className={`text-xs font-bold ${nightMode?'text-red-600':'text-emerald-600'}`}>{nightMode?'MANUAL':'AUTO'}</span>
+                        <div onClick={toggleNightMode} className={`night-switch ${nightMode?'active bg-red-500':'bg-emerald-500'}`}><div className="knob"></div></div>
+                    </div>
+                    <div className="text-right"><p className="text-sm font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-xs text-gray-600">Administrador</p></div>
+                    <button onClick={()=>setView('configuracion')} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 border border-gray-200 transition-colors"><i className="fas fa-bars text-sm"></i></button>
+                </div>
+            </div>
+            {/* Layout */}
+            <div className="flex flex-1 min-h-0">
+                {/* Sidebar */}
+                <div className="w-52 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+                    <nav className="flex-1 p-3 space-y-1 overflow-y-auto hide-scrollbar">
+                        {NAV.map(n => (
+                            <button key={n.id} onClick={()=>setView(n.id)}
+                                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${view===n.id?n.active+' text-white shadow-md':'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}`}>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${view===n.id?'bg-white/20':'bg-gray-100'}`}><i className={`fas ${n.icon} text-sm ${view===n.id?'text-white':n.color}`}></i></div>
+                                <span className="font-medium text-sm">{n.label}</span>
+                                {n.badge>0&&<span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-bold ${view===n.id?'bg-white/25 text-white':'bg-red-500 text-white'}`}>{n.badge}</span>}
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="p-4 border-t border-gray-200"><button onClick={handleLogout} className="w-full flex items-center gap-2 text-xs text-red-600 hover:text-red-700 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"><i className="fas fa-sign-out-alt"></i>Cerrar sesión</button></div>
+                </div>
+                {/* Contenido */}
+                <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                    {success&&<div className={`mx-4 mt-3 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 flex-shrink-0 font-medium ${success.startsWith('✅')?'bg-emerald-50 border border-emerald-300 text-emerald-800':'bg-red-50 border border-red-300 text-red-700'}`}><i className={`fas ${success.startsWith('✅')?'fa-check-circle':'fa-exclamation-circle'}`}></i>{success}</div>}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        {view==='inicio'       && <SeccionInicio     orders={orders} user={user} onGoTo={(s)=>setView(s)} />}
+                        {view==='pedidos'       && <SeccionPedidos    orders={orders} nightMode={nightMode} onStatusChange={handleStatusChange} onSuccess={m=>{setSuccess(m);setTimeout(()=>setSuccess(''),4000);loadOrders();}} onRefresh={loadOrders}/>}
+                        {view==='pacientes'     && <SeccionPacientes  orders={orders}/>}
+                        {view==='resultados'    && <SeccionResultados orders={orders}/>}
+                        {view==='facturacion'   && <SeccionFacturacion orders={orders}/>}
+                        {view==='catalogo'      && <SeccionCatalogo/>}
+                        {view==='configuracion' && (
+                            <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+                                <div className="max-w-md">
+                                    <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                                        <h1 className="text-2xl font-bold text-gray-800 mb-6">Configuración</h1>
+                                        <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                                            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">{(user?.username||'A')[0].toUpperCase()}</div>
+                                            <div><p className="font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-sm text-gray-600">INULABORATORIOS</p></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+    </script>
+</body>
+</html>
