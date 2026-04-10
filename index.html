@@ -712,8 +712,17 @@ const SeccionPacientes = ({ orders }) => {
     const filtered = allPets.filter(p => !search||p.name?.toLowerCase().includes(search.toLowerCase())||p.owner?.toLowerCase().includes(search.toLowerCase())||p.ownerClient?.toLowerCase().includes(search.toLowerCase()));
     if (selExam) return <PdfModal title={selExam.type} subtitle={selExam.petName} icon="fa-file-pdf" pdfUrl={selExam.pdfData} onClose={()=>setSelExam(null)}/>;
     if (selPet) {
-        const petOrders = orders.filter(o=>o.items.some(it=>it.pet?.id===selPet.id||it.pet?.name===selPet.name));
-        const exams = petOrders.flatMap(o=>o.items.filter(it=>it.pet?.id===selPet.id||it.pet?.name===selPet.name).map(it=>({...it,orderId:o.id,orderDate:o.date})));
+        const petOrders = orders.filter(o => o.items.some(it => {
+            if (selPet.id && it.pet?.id) return it.pet.id === selPet.id;
+            return it.pet?.name === selPet.name && it.pet?.name;
+        }));
+        const exams = petOrders.flatMap(o => o.items
+            .filter(it => {
+                if (selPet.id && it.pet?.id) return it.pet.id === selPet.id;
+                return it.pet?.name === selPet.name && it.pet?.name;
+            })
+            .map(it => ({...it, orderId: o.id, orderDate: o.date}))
+        );
         return (
             <div className="flex flex-col h-full">
                 <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><button onClick={()=>setSelPet(null)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors"><i className="fas fa-arrow-left text-sm"></i></button><PetPhoto photo={selPet.photo} size="xl"/><div><p className="text-gray-800 font-bold">{selPet.name}</p><p className="text-gray-600 text-sm">{selPet.owner?`Dueño: ${selPet.owner}`:(selPet.ownerClient&&selPet.ownerClient!=='Pedido web')?`Cliente: ${selPet.ownerClient}`:''}</p></div></div></div>
