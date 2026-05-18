@@ -779,12 +779,13 @@ const TrackingModal = ({ order, onClose }) => {
 };
 
 // ── TARJETA PEDIDO (diseño nuevo) ────────────────────────────────────────
-const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) => {
+const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
     const [showUpload, setShowUpload] = useState(false);
     const [showInvoice, setShowInvoice] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [showPdf, setShowPdf] = useState(null);
     const [showTracking, setShowTracking] = useState(false);
+    const [manualMode, setManualMode] = useState(false);
     const si = getStatusInfo(order.status);
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
@@ -797,9 +798,19 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                     <p className="text-gray-500 text-xs">{new Date(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
                     {order.motoName&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
                 </div>
-                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${si.bg} ${si.color}`}>
-                    <i className={`fas ${si.icon} text-xs`}></i>{si.label}
-                </span>
+                <div className="flex flex-col items-end gap-1.5">
+                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${si.bg} ${si.color}`}>
+                        <i className={`fas ${si.icon} text-xs`}></i>{si.label}
+                    </span>
+                    {/* Botón manual por tarjeta */}
+                    {order.status !== 'completed' && (
+                        <button onClick={()=>setManualMode(m=>!m)}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${manualMode?'bg-red-100 text-red-600 border border-red-200':'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'}`}>
+                            <i className={`fas ${manualMode?'fa-hand-paper':'fa-robot'} text-xs`}></i>
+                            {manualMode?'Manual':'Auto'}
+                        </button>
+                    )}
+                </div>
             </div>
             <div className="space-y-2 mb-3">
                 {order.items.map((item,i) => (
@@ -813,15 +824,15 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                     </div>
                 ))}
             </div>
-            {order.status==='pending'&&!nightMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
+            {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
             {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
             {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
             <div className="flex items-center justify-between gap-2 mt-2">
                 <div className="flex flex-wrap gap-2">
                     {order.status==='pending'&&<button onClick={()=>setShowAssign(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-user-check mr-1"></i>Asignar moto</button>}
-                    {order.status==='pending'&&nightMode&&<button onClick={()=>onStatusChange(order.id,'moto_en_camino')} className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-motorcycle mr-1"></i>Enviar manualmente</button>}
-                    {['moto_en_camino','moto_arrived','sample_received','arrived_at_lab'].includes(order.status)&&nightMode&&(()=>{const nm={moto_en_camino:'moto_arrived',moto_arrived:'sample_received',sample_received:'arrived_at_lab',arrived_at_lab:'processing'};const nl={moto_en_camino:'Llegó a destino',moto_arrived:'Muestra recogida',sample_received:'En laboratorio',arrived_at_lab:'Procesar'};return(<button onClick={()=>onStatusChange(order.id,nm[order.status])} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-arrow-right mr-1"></i>{nl[order.status]}</button>);})()}
-                    {order.status==='arrived_at_lab'&&!nightMode&&<button onClick={()=>onStatusChange(order.id,'processing')} className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-flask mr-1"></i>Procesar</button>}
+                    {order.status==='pending'&&manualMode&&<button onClick={()=>onStatusChange(order.id,'moto_en_camino')} className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-motorcycle mr-1"></i>Enviar manualmente</button>}
+                    {['moto_en_camino','moto_arrived','sample_received','arrived_at_lab'].includes(order.status)&&manualMode&&(()=>{const nm={moto_en_camino:'moto_arrived',moto_arrived:'sample_received',sample_received:'arrived_at_lab',arrived_at_lab:'processing'};const nl={moto_en_camino:'Llegó a destino',moto_arrived:'Muestra recogida',sample_received:'En laboratorio',arrived_at_lab:'Procesar'};return(<button onClick={()=>onStatusChange(order.id,nm[order.status])} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-arrow-right mr-1"></i>{nl[order.status]}</button>);})()}
+                    {order.status==='arrived_at_lab'&&!manualMode&&<button onClick={()=>onStatusChange(order.id,'processing')} className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-flask mr-1"></i>Procesar</button>}
                     {order.status==='processing'&&<button onClick={()=>setShowUpload(true)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-file-upload mr-1"></i>Subir resultados</button>}
                     {order.status==='results_uploaded'&&<button onClick={()=>onStatusChange(order.id,'completed')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-paper-plane mr-1"></i>Liberar resultados</button>}
                     {['results_uploaded','completed'].includes(order.status)&&<button onClick={()=>setShowUpload(true)} className="px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-redo mr-1"></i>Re-subir resultado</button>}
@@ -833,7 +844,6 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                     <button onClick={()=>setShowTracking(true)} className="w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg flex items-center justify-center transition-colors" title="Tracking"><i className="fas fa-motorcycle text-xs"></i></button>
                 </div>
             </div>
-
             {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
             {showInvoice&&<InvoiceModal order={order} onClose={()=>setShowInvoice(false)} onSuccess={onSuccess}/>}
             {showAssign&&<AssignModal order={order} onClose={()=>setShowAssign(false)} onAssign={onSuccess}/>}
@@ -884,7 +894,7 @@ const SeccionInicio = ({ orders, user, onGoTo }) => {
 };
 
 // ── SECCIÓN PEDIDOS ───────────────────────────────
-const SeccionPedidos = ({ orders, nightMode, onStatusChange, onSuccess, onRefresh }) => {
+const SeccionPedidos = ({ orders, onStatusChange, onSuccess, onRefresh }) => {
     const [tab, setTab] = useState('pending'); const [search, setSearch] = useState('');
     const pending   = orders.filter(o => o.status !== 'completed');
     const completed = orders.filter(o => o.status === 'completed').sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
@@ -899,12 +909,12 @@ const SeccionPedidos = ({ orders, nightMode, onStatusChange, onSuccess, onRefres
                     </div>
                     <div className="relative flex-1 min-w-48"><i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar pedido, mascota, examen..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-blue-500 focus:outline-none"/></div>
                     <button onClick={onRefresh} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors flex-shrink-0"><i className="fas fa-sync-alt text-sm"></i></button>
-                    {nightMode&&<div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5"><i className="fas fa-moon text-red-500 text-xs"></i><span className="text-red-700 text-xs font-semibold">Modo Manual ON</span></div>}
+
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
                 {list.length===0?(<div className="flex flex-col items-center justify-center h-64"><i className={`fas ${tab==='pending'?'fa-inbox':'fa-history'} text-5xl mb-3 text-gray-300`}></i><p className="text-gray-600">{tab==='pending'?'Sin pedidos pendientes':'Sin pedidos completados'}</p></div>):(
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-6">{list.map(o=><OrderCard key={o.id} order={o} nightMode={nightMode} onStatusChange={onStatusChange} onSuccess={onSuccess}/>)}</div>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pb-6">{list.map(o=><OrderCard key={o.id} order={o} onStatusChange={onStatusChange} onSuccess={onSuccess}/>)}</div>
                 )}
             </div>
         </div>
@@ -1476,11 +1486,7 @@ const App = () => {
                     <span className="text-base font-light text-gray-700 tracking-widest hidden sm:block">INULABORATORIOS</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-200">
-                        <span className="text-lg">🏍️</span>
-                        <span className={`text-xs font-bold ${nightMode?'text-red-500':'text-emerald-500'}`}>{nightMode?'MANUAL':'AUTO'}</span>
-                        <div onClick={toggleNightMode} className={`night-switch ${nightMode?'active bg-red-500':'bg-emerald-500'}`}><div className="knob"></div></div>
-                    </div>
+
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">{user?.username||'Admin'}</p>
                         <p className="text-xs text-gray-500">Administrador</p>
@@ -1515,7 +1521,7 @@ const App = () => {
                     {success&&<div className={`mx-4 mt-3 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 flex-shrink-0 font-medium ${success.startsWith('✅')?'bg-emerald-50 border border-emerald-300 text-emerald-800':'bg-red-50 border border-red-300 text-red-700'}`}><i className={`fas ${success.startsWith('✅')?'fa-check-circle':'fa-exclamation-circle'}`}></i>{success}</div>}
                     <div className="flex-1 min-h-0 overflow-hidden">
                         {view==='inicio'       && <SeccionInicio     orders={orders} user={user} onGoTo={(s)=>setView(s)} />}
-                        {view==='pedidos'       && <SeccionPedidos    orders={orders} nightMode={nightMode} onStatusChange={handleStatusChange} onSuccess={m=>{setSuccess(m);setTimeout(()=>setSuccess(''),4000);loadOrders();}} onRefresh={loadOrders}/>}
+                        {view==='pedidos'       && <SeccionPedidos    orders={orders} onStatusChange={handleStatusChange} onSuccess={m=>{setSuccess(m);setTimeout(()=>setSuccess(''),4000);loadOrders();}} onRefresh={loadOrders}/>}
                         {view==='pacientes'     && <SeccionPacientes  orders={orders}/>}
                         {view==='resultados'    && <SeccionResultados orders={orders}/>}
                         {view==='facturacion'   && <SeccionFacturacion orders={orders}/>}
