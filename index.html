@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>INULABORATORIOS - Panel Staff</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -14,137 +15,154 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-        * {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
+        * { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        /* Prevenir bounce/rubber-band en iOS */
+        html {
+            overflow: hidden;
             height: 100%;
-            background: #f3f4f6;
+            position: fixed;
+            width: 100%;
         }
-
+        body {
+            overflow: hidden;
+            height: 100%;
+            position: fixed;
+            width: 100%;
+        }
         #root {
             height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: none;
         }
-
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
         }
-
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        @keyframes ride {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
         }
-
-        .tracking-map {
-            height: 220px;
-            width: 100%;
-            z-index: 1;
-            border-radius: 12px;
+        .riding { animation: ride 0.5s infinite; }
+        .tracking-map { height: 200px; width: 100%; z-index: 1; border-radius: 16px; overflow: hidden; }
+        .leaflet-container { font-family: 'Poppins', sans-serif; }
+        .moto-marker-icon { font-size: 28px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); }
+        .dest-marker-icon { font-size: 24px; filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3)); }
+        @keyframes moto-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .moto-animating { animation: moto-bounce 0.6s infinite; }
+        @keyframes green-pulse {
+            0%, 100% { background-color: white; }
+            50% { background-color: #d1fae5; }
+        }
+        .highlight-green-pulse { animation: green-pulse 0.8s ease-in-out 5; }
+        .night-switch { width: 52px; height: 28px; border-radius: 14px; position: relative; cursor: pointer; transition: background-color 0.3s; }
+        .night-switch .knob { width: 22px; height: 22px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .night-switch.active .knob { transform: translateX(24px); }
+        .menu-container {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.25s ease-out;
+        }
+        .menu-container.open {
+            grid-template-rows: 1fr;
+        }
+        .menu-content {
             overflow: hidden;
         }
-
-        .leaflet-container {
-            font-family: 'Poppins', sans-serif;
+        /* Header fijo para móviles con safe-area */
+        .app-header {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            background: white;
+            padding-top: env(safe-area-inset-top, 0px);
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            will-change: transform;
         }
-
-        .moto-marker-icon {
-            font-size: 28px;
-            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+        .app-content {
+            padding-top: calc(70px + env(safe-area-inset-top, 0px));
+            min-height: 100vh;
         }
-
-        .dest-marker-icon {
-            font-size: 22px;
-            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.4));
+        /* Para páginas con breadcrumb - más espacio */
+        .app-content-breadcrumb {
+            padding-top: calc(70px + env(safe-area-inset-top, 0px));
+            min-height: 100vh;
         }
-
-        @keyframes moto-bounce {
-            0%,100% {
-                transform: translateY(0)
-            }
-
-            50% {
-                transform: translateY(-5px)
-            }
+        /* Visor de PDF compacto para móviles */
+        .pdf-viewer-container {
+            max-height: calc(100vh - 280px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            overflow: hidden;
         }
-
-        .moto-animating {
-            animation: moto-bounce 0.7s infinite;
+        /* Panel de filtros fijo - NUEVA CAPA flotante */
+        .filters-panel {
+            position: fixed !important;
+            top: calc(58px + env(safe-area-inset-top, 0px));
+            left: 0;
+            right: 0;
+            z-index: 500;
+            background: white;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            padding: 0.75rem 1rem;
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+            -webkit-transform: translate3d(0, 0, 0);
+            transform: translate3d(0, 0, 0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            will-change: transform;
         }
-
-        .night-switch {
-            width: 52px;
-            height: 28px;
-            border-radius: 14px;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.3s;
+        .filters-panel-inner {
+            max-width: 56rem;
+            margin: 0 auto;
+            padding: 0 0.5rem;
         }
-
-            .night-switch .knob {
-                width: 22px;
-                height: 22px;
-                border-radius: 50%;
-                background: white;
-                position: absolute;
-                top: 3px;
-                left: 3px;
-                transition: transform 0.3s;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            }
-
-            .night-switch.active .knob {
-                transform: translateX(24px);
-            }
-
-        @keyframes highlightFlash {
-            0% {
-                background-color: rgb(243,244,246)
-            }
-
-            25% {
-                background-color: rgba(6,182,212,0.15)
-            }
-
-            55% {
-                background-color: rgb(243,244,246)
-            }
-
-            80% {
-                background-color: rgba(6,182,212,0.08)
-            }
-
-            100% {
-                background-color: rgb(243,244,246)
-            }
+        /* Espaciador para el contenido debajo del panel de filtros */
+        .list-spacer-small {
+            height: 100px;
         }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
+        .list-spacer-medium {
+            height: 145px;
         }
-
-        input[type=number]::-webkit-inner-spin-button {
-            opacity: 1;
+        .list-spacer-large {
+            height: 200px;
         }
+    @keyframes highlightFlash {
+        0%   { background-color: rgb(255,255,255); }
+        25%  { background-color: rgba(6, 182, 212, 0.5); }
+        55%  { background-color: rgb(255,255,255); }
+        80%  { background-color: rgba(6, 182, 212, 0.35); }
+        100% { background-color: rgb(255,255,255); }
+    }
+    
+    @keyframes highlightFlash {
+        0%   { background-color: rgb(243,244,246) }
+        25%  { background-color: rgba(6,182,212,0.15) }
+        55%  { background-color: rgb(243,244,246) }
+        80%  { background-color: rgba(6,182,212,0.08) }
+        100% { background-color: rgb(243,244,246) }
+    }
+    .status-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600; }
+    .login-wrapper { background: linear-gradient(135deg,#e0f7fa 0%,#e8f5e9 50%,#e3f2fd 100%); }
+    /* Override body/html for desktop */
+    @media (min-width: 768px) {
+        html, body { position: static; overflow: auto; height: auto; }
+        #root { height: 100vh; overflow: hidden; }
+    }
 
-        .login-wrapper {
-            background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 50%, #e3f2fd 100%);
-        }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
+
 const { useState, useEffect, useRef } = React;
 
 const API_BASE = 'https://inulab-backend-production-99d1.up.railway.app';
@@ -547,81 +565,47 @@ const AssignModal = ({ order, onClose, onAssign }) => {
     );
 };
 
-// ── TARJETA PEDIDO ────────────────────────────────
+// ── TARJETA PEDIDO (diseño nuevo) ────────────────────────────────────────
 const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) => {
-    const [showUpload, setShowUpload] = useState(false); const [showInvoice, setShowInvoice] = useState(false); const [showAssign, setShowAssign] = useState(false); const [showPdf, setShowPdf] = useState(null);
+    const [showUpload, setShowUpload] = useState(false);
+    const [showInvoice, setShowInvoice] = useState(false);
+    const [showAssign, setShowAssign] = useState(false);
+    const [showPdf, setShowPdf] = useState(null);
     const si = getStatusInfo(order.status);
     return (
-        <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
-                    <div className="flex items-center gap-2 mb-0.5"><span className="text-gray-800 font-bold">{order.userName}</span><span className={`text-xs px-2 py-0.5 rounded-full ${order.userType==='medico'?'bg-emerald-100 text-emerald-700':'bg-blue-100 text-blue-700'}`}>{order.userType==='medico'?'Clínica':'Cliente'}</span></div>
-                    <p className="text-gray-600 text-xs">{new Date(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-gray-800 font-bold">{order.userName}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${order.userType==='medico'?'bg-emerald-100 text-emerald-700':'bg-blue-100 text-blue-700'}`}>{order.userType==='medico'?'Clínica':'Cliente'}</span>
+                    </div>
+                    <p className="text-gray-500 text-xs">{new Date(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
                     {order.motoName&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
                 </div>
-                <span className={`status-badge ${si.bg} ${si.color} border border-current/20`}><i className={`fas ${si.icon} text-xs`}></i>{si.label}</span>
+                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${si.bg} ${si.color}`}>
+                    <i className={`fas ${si.icon} text-xs`}></i>{si.label}
+                </span>
             </div>
             <div className="space-y-2 mb-3">
-                {order.items.map((item,i) => (<div key={i} className="bg-gray-50 rounded-xl p-2.5 flex items-center gap-2 border border-gray-100"><PetPhoto photo={item.pet?.photo} size="md" /><div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p><p className="text-gray-600 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.address}, {item.address?.district}</p></div>{item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}</div>))}
-            </div>
-            {order.comment&&<p className="text-xs text-gray-600 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
-            {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
-            {/* Timeline de estados */}
-            {(() => {
-                const STEPS = [
-                    { id:'pending',           label:'Pedido recibido',        icon:'fa-clipboard-check' },
-                    { id:'assigned',          label:'Motorizado asignado',    icon:'fa-user-check' },
-                    { id:'moto_en_camino',    label:'Motorizado en camino',   icon:'fa-motorcycle' },
-                    { id:'moto_arrived',      label:'Motorizado llegó',       icon:'fa-map-marker-alt' },
-                    { id:'pickup_in_progress',label:'Recogiendo muestra',     icon:'fa-hourglass-start' },
-                    { id:'sample_received',   label:'Muestra recogida',       icon:'fa-vial' },
-                    { id:'arrived_at_lab',    label:'En laboratorio',         icon:'fa-flask' },
-                    { id:'processing',        label:'Procesando muestra',     icon:'fa-cog' },
-                    { id:'results_uploaded',  label:'Resultados listos',      icon:'fa-file-medical' },
-                    { id:'completed',         label:'Completado',             icon:'fa-check-double' },
-                ];
-                const currentIdx = STEPS.findIndex(s => s.id === order.status);
-                // Solo mostrar si hay al menos 1 paso completado
-                if (currentIdx < 0) return null;
-                return (
-                    <div className="mt-3 mb-1">
-                        <div className="flex items-center gap-2 mb-2">
-                            <i className="fas fa-route text-cyan-500 text-xs"></i>
-                            <span className="text-xs font-semibold text-gray-600">Progreso del pedido</span>
+                {order.items.map((item,i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
+                        <PetPhoto photo={item.pet?.photo} size="md"/>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p>
+                            <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
                         </div>
-                        <div className="space-y-0">
-                            {STEPS.map((step, idx) => {
-                                const done    = idx <= currentIdx;
-                                const current = idx === currentIdx;
-                                const isLast  = idx === STEPS.length - 1;
-                                return (
-                                    <div key={step.id} className="flex gap-2.5">
-                                        {/* Línea + círculo */}
-                                        <div className="flex flex-col items-center">
-                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${done ? (current ? 'bg-cyan-500' : 'bg-emerald-500') : 'bg-gray-200'}`}>
-                                                {done
-                                                    ? <i className={`fas ${current ? step.icon : 'fa-check'} text-white`} style={{fontSize:'8px'}}></i>
-                                                    : <i className={`fas ${step.icon} text-gray-400`} style={{fontSize:'8px'}}></i>
-                                                }
-                                            </div>
-                                            {!isLast && <div className={`w-0.5 h-4 ${idx < currentIdx ? 'bg-emerald-400' : 'bg-gray-200'}`}></div>}
-                                        </div>
-                                        {/* Texto */}
-                                        <p className={`text-xs leading-5 ${done ? (current ? 'text-cyan-700 font-semibold' : 'text-gray-700') : 'text-gray-400'} ${!isLast ? 'mb-0' : ''}`}>
-                                            {step.label}
-                                            {current && <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse align-middle"></span>}
-                                        </p>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
                     </div>
-                );
-            })()}
+                ))}
+            </div>
+            {order.status==='pending'&&!nightMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
+            {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
+            {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
             <div className="flex flex-wrap gap-2 mt-2">
                 {order.status==='pending'&&<button onClick={()=>setShowAssign(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-user-check mr-1"></i>Asignar moto</button>}
                 {order.status==='pending'&&nightMode&&<button onClick={()=>onStatusChange(order.id,'moto_en_camino')} className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-motorcycle mr-1"></i>Enviar manualmente</button>}
-                {['moto_en_camino','moto_arrived','sample_received','arrived_at_lab'].includes(order.status)&&nightMode&&(()=>{const nextMap={moto_en_camino:'moto_arrived',moto_arrived:'sample_received',sample_received:'arrived_at_lab',arrived_at_lab:'processing'};const nextLabel={moto_en_camino:'Llegó a destino',moto_arrived:'Muestra recogida',sample_received:'En laboratorio',arrived_at_lab:'Procesar'};return(<button onClick={()=>onStatusChange(order.id,nextMap[order.status])} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-arrow-right mr-1"></i>{nextLabel[order.status]}</button>);})()}
+                {['moto_en_camino','moto_arrived','sample_received','arrived_at_lab'].includes(order.status)&&nightMode&&(()=>{const nm={moto_en_camino:'moto_arrived',moto_arrived:'sample_received',sample_received:'arrived_at_lab',arrived_at_lab:'processing'};const nl={moto_en_camino:'Llegó a destino',moto_arrived:'Muestra recogida',sample_received:'En laboratorio',arrived_at_lab:'Procesar'};return(<button onClick={()=>onStatusChange(order.id,nm[order.status])} className="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-arrow-right mr-1"></i>{nl[order.status]}</button>);})()}
                 {order.status==='arrived_at_lab'&&!nightMode&&<button onClick={()=>onStatusChange(order.id,'processing')} className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-flask mr-1"></i>Procesar</button>}
                 {order.status==='processing'&&<button onClick={()=>setShowUpload(true)} className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-file-upload mr-1"></i>Subir resultados</button>}
                 {order.status==='results_uploaded'&&<button onClick={()=>onStatusChange(order.id,'completed')} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-paper-plane mr-1"></i>Liberar resultados</button>}
@@ -629,6 +613,9 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                 {!order.invoicePdf&&['results_uploaded','completed'].includes(order.status)&&<button onClick={()=>setShowInvoice(true)} className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-receipt mr-1"></i>Subir comprobante</button>}
                 {order.invoicePdf&&<button onClick={()=>setShowPdf({url:order.invoicePdf,title:order.documentType==='boleta'?'Boleta':'Factura',sub:order.userName,icon:'fa-receipt'})} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors border border-gray-200"><i className="fas fa-eye mr-1"></i>Ver comprobante</button>}
             </div>
+            <button className="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-colors">
+                <i className="fas fa-phone text-sm"></i>Llamar
+            </button>
             {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
             {showInvoice&&<InvoiceModal order={order} onClose={()=>setShowInvoice(false)} onSuccess={onSuccess}/>}
             {showAssign&&<AssignModal order={order} onClose={()=>setShowAssign(false)} onAssign={onSuccess}/>}
@@ -1201,37 +1188,46 @@ const App = () => {
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col" style={{height:'100vh'}}>
-            {/* Header */}
+            {/* Header - estilo LATEST */}
             <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
                 <div className="flex items-center gap-3 cursor-pointer" onClick={()=>setView('inicio')}>
                     <img src="logo_inulaboratorios.jpg" alt="Logo" className="h-9 rounded-xl object-cover shadow" onError={e=>{e.target.style.display='none';}}/>
-                    <span className="text-base font-light text-gray-500 tracking-widest hidden sm:block">INULABORATORIOS</span>
+                    <span className="text-base font-light text-gray-700 tracking-widest hidden sm:block">INULABORATORIOS</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-xl border border-gray-200">
-                        <span className="text-base">🏍️</span>
-                        <span className={`text-xs font-bold ${nightMode?'text-red-600':'text-emerald-600'}`}>{nightMode?'MANUAL':'AUTO'}</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-lg">🏍️</span>
+                        <span className={`text-xs font-bold ${nightMode?'text-red-500':'text-emerald-500'}`}>{nightMode?'MANUAL':'AUTO'}</span>
                         <div onClick={toggleNightMode} className={`night-switch ${nightMode?'active bg-red-500':'bg-emerald-500'}`}><div className="knob"></div></div>
                     </div>
-                    <div className="text-right"><p className="text-sm font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-xs text-gray-600">Administrador</p></div>
+                    <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-800">{user?.username||'Admin'}</p>
+                        <p className="text-xs text-gray-500">Administrador</p>
+                    </div>
                     <button onClick={()=>setView('configuracion')} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 border border-gray-200 transition-colors"><i className="fas fa-bars text-sm"></i></button>
                 </div>
             </div>
             {/* Layout */}
             <div className="flex flex-1 min-h-0">
-                {/* Sidebar */}
+                {/* Sidebar - estilo LATEST */}
                 <div className="w-52 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
                     <nav className="flex-1 p-3 space-y-1 overflow-y-auto hide-scrollbar">
                         {NAV.map(n => (
                             <button key={n.id} onClick={()=>setView(n.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${view===n.id?n.active+' text-white shadow-md':'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}`}>
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${view===n.id?'bg-white/20':'bg-gray-100'}`}><i className={`fas ${n.icon} text-sm ${view===n.id?'text-white':n.color}`}></i></div>
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${view===n.id?'bg-white/20':'bg-gray-100'}`}>
+                                    <i className={`fas ${n.icon} text-sm ${view===n.id?'text-white':n.color}`}></i>
+                                </div>
                                 <span className="font-medium text-sm">{n.label}</span>
                                 {n.badge>0&&<span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-bold ${view===n.id?'bg-white/25 text-white':'bg-red-500 text-white'}`}>{n.badge}</span>}
                             </button>
                         ))}
                     </nav>
-                    <div className="p-4 border-t border-gray-200"><button onClick={handleLogout} className="w-full flex items-center gap-2 text-xs text-red-600 hover:text-red-700 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium"><i className="fas fa-sign-out-alt"></i>Cerrar sesión</button></div>
+                    <div className="p-4 border-t border-gray-200">
+                        <button onClick={handleLogout} className="w-full flex items-center gap-2 text-xs text-red-600 hover:text-red-700 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors font-medium">
+                            <i className="fas fa-sign-out-alt"></i>Cerrar sesión
+                        </button>
+                    </div>
                 </div>
                 {/* Contenido */}
                 <div className="flex-1 flex flex-col min-w-0 min-h-0">
@@ -1250,7 +1246,7 @@ const App = () => {
                                         <h1 className="text-2xl font-bold text-gray-800 mb-6">Configuración</h1>
                                         <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-xl border border-amber-100">
                                             <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">{(user?.username||'A')[0].toUpperCase()}</div>
-                                            <div><p className="font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-sm text-gray-600">INULABORATORIOS</p></div>
+                                            <div><p className="font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-sm text-gray-500">INULABORATORIOS</p></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1261,10 +1257,11 @@ const App = () => {
             </div>
         </div>
     );
-};
+
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
+    
     </script>
 </body>
 </html>
