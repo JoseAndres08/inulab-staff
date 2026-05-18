@@ -525,7 +525,7 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, onClose }) => {
                         )}
                         {!loading && !error && blobUrl && (
                             <div className="w-full" style={{height:'420px'}}>
-                                <iframe src={blobUrl} className="w-full h-full rounded-xl border border-gray-200"/>
+                                <iframe src={blobUrl + '#toolbar=0&navpanes=0&scrollbar=1&view=FitH'} className="w-full h-full rounded-xl border border-gray-200" style={{background:'white'}}/>
                             </div>
                         )}
                     </div>
