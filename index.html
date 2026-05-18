@@ -565,12 +565,129 @@ const AssignModal = ({ order, onClose, onAssign }) => {
     );
 };
 
+// ── TRACKING MODAL ───────────────────────────────────────────────────────
+const TrackingModal = ({ order, onClose }) => {
+    const STEPS = [
+        { id:'pending',            label:'Pedido recibido',       desc:'Tu pedido ha sido registrado',              icon:'fa-clipboard-check' },
+        { id:'assigned',           label:'Pedido confirmado',     desc:'El laboratorio confirmó tu pedido',         icon:'fa-user-check' },
+        { id:'moto_en_camino',     label:'Motorizado en camino',  desc:'El motorizado va hacia tu ubicación',       icon:'fa-motorcycle' },
+        { id:'moto_arrived',       label:'Motorizado llegó',      desc:'Por favor entrega la muestra',              icon:'fa-map-marker-alt' },
+        { id:'pickup_in_progress', label:'Muestra recogida',      desc:'Tu muestra va camino al laboratorio',       icon:'fa-vial' },
+        { id:'sample_received',    label:'En laboratorio',        desc:'La muestra llegó al laboratorio',           icon:'fa-flask' },
+        { id:'arrived_at_lab',     label:'En laboratorio',        desc:'La muestra llegó al laboratorio',           icon:'fa-flask' },
+        { id:'processing',         label:'Procesando muestra',    desc:'Estamos analizando tu muestra',             icon:'fa-cog' },
+        { id:'results_uploaded',   label:'Resultados listos',     desc:'Tus resultados están disponibles',          icon:'fa-file-medical' },
+        { id:'completed',          label:'Completado',            desc:'Proceso finalizado exitosamente',           icon:'fa-check-double' },
+    ];
+    const currentIdx = STEPS.findIndex(s => s.id === order.status);
+    const item = order.items?.[0];
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
+            <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-gray-200">
+                {/* Header */}
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                            <i className="fas fa-motorcycle text-cyan-600"></i>
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-800">Tracking del Pedido</p>
+                            <p className="text-xs text-gray-500">{order.userName}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors">
+                        <i className="fas fa-times"></i>
+                    </button>
+                </div>
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-5 min-h-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Timeline */}
+                        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                            <h3 className="font-bold text-gray-800 mb-4">Estado del pedido</h3>
+                            <div className="space-y-0">
+                                {STEPS.filter((s,i,arr) => {
+                                    // Deduplicate arrived_at_lab / sample_received shown as "En laboratorio"
+                                    if (s.id === 'arrived_at_lab') return false;
+                                    return true;
+                                }).map((step, idx, arr) => {
+                                    const realIdx = STEPS.findIndex(s => s.id === step.id);
+                                    const done = realIdx <= currentIdx;
+                                    const current = realIdx === currentIdx;
+                                    const isLast = idx === arr.length - 1;
+                                    return (
+                                        <div key={step.id} className="flex gap-3">
+                                            <div className="flex flex-col items-center">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${done ? (current ? 'bg-cyan-500 border-cyan-500' : 'bg-emerald-500 border-emerald-500') : 'bg-white border-gray-300'}`}>
+                                                    {done && <i className={`fas ${current ? step.icon : 'fa-check'} text-white`} style={{fontSize:'9px'}}></i>}
+                                                </div>
+                                                {!isLast && <div className={`w-0.5 h-8 mt-1 ${realIdx < currentIdx ? 'bg-emerald-400' : 'bg-gray-200'}`}></div>}
+                                            </div>
+                                            <div className="pb-3">
+                                                <p className={`text-sm font-semibold leading-5 ${done ? (current ? 'text-cyan-700' : 'text-gray-800') : 'text-gray-400'}`}>
+                                                    {step.label}
+                                                    {current && <span className="ml-2 inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse align-middle"></span>}
+                                                </p>
+                                                <p className={`text-xs ${done ? 'text-gray-500' : 'text-gray-300'}`}>{step.desc}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        {/* Order detail */}
+                        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                            <h3 className="font-bold text-gray-800 mb-4">Detalle del pedido</h3>
+                            <div className="space-y-3">
+                                {order.items.map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <i className="fas fa-vial text-cyan-600"></i>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800 text-sm">{item.exam?.name}</p>
+                                            <p className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-paw text-xs"></i>{item.pet?.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {item?.address && (
+                                    <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i className="fas fa-map-marker-alt text-cyan-600"></i>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800 text-sm">Dirección de recojo</p>
+                                            <p className="text-xs text-gray-500">{item.address?.address}, {item.address?.district}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {order.comment && (
+                                    <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                                        <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                            <i className="fas fa-comment text-cyan-600"></i>
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800 text-sm">Comentario</p>
+                                            <p className="text-xs text-gray-500">{order.comment}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ── TARJETA PEDIDO (diseño nuevo) ────────────────────────────────────────
 const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) => {
     const [showUpload, setShowUpload] = useState(false);
     const [showInvoice, setShowInvoice] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [showPdf, setShowPdf] = useState(null);
+    const [showTracking, setShowTracking] = useState(false);
     const si = getStatusInfo(order.status);
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
@@ -613,16 +730,24 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                 {!order.invoicePdf&&['results_uploaded','completed'].includes(order.status)&&<button onClick={()=>setShowInvoice(true)} className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-receipt mr-1"></i>Subir comprobante</button>}
                 {order.invoicePdf&&<button onClick={()=>setShowPdf({url:order.invoicePdf,title:order.documentType==='boleta'?'Boleta':'Factura',sub:order.userName,icon:'fa-receipt'})} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors border border-gray-200"><i className="fas fa-eye mr-1"></i>Ver comprobante</button>}
             </div>
-            <button className="mt-3 w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-colors">
-                <i className="fas fa-phone text-sm"></i>Llamar
-            </button>
+            {/* Botones Llamar + Tracking */}
+            <div className="flex gap-2 mt-3">
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                    <i className="fas fa-phone text-xs"></i>Llamar
+                </button>
+                <button onClick={()=>setShowTracking(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-sm font-semibold transition-colors">
+                    <i className="fas fa-motorcycle text-xs"></i>Tracking
+                </button>
+            </div>
             {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
             {showInvoice&&<InvoiceModal order={order} onClose={()=>setShowInvoice(false)} onSuccess={onSuccess}/>}
             {showAssign&&<AssignModal order={order} onClose={()=>setShowAssign(false)} onAssign={onSuccess}/>}
             {showPdf&&<PdfModal title={showPdf.title} subtitle={showPdf.sub} icon={showPdf.icon||'fa-file-pdf'} pdfUrl={showPdf.url} onClose={()=>setShowPdf(null)}/>}
+            {showTracking&&<TrackingModal order={order} onClose={()=>setShowTracking(false)}/>}
         </div>
     );
 };
+
 
 // ── SECCIÓN INICIO ────────────────────────────────
 const SeccionInicio = ({ orders, user, onGoTo }) => {
