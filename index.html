@@ -654,17 +654,15 @@ const TrackingModal = ({ order, onClose }) => {
                                     </div>
                                 </div>
                             )}
-                            {order.comment && (
-                                <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
-                                    <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <i className="fas fa-comment text-cyan-600"></i>
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold text-gray-800 text-sm">Comentario</p>
-                                        <p className="text-xs text-gray-500">{order.comment}</p>
-                                    </div>
+                            <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                                <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <i className="fas fa-comment text-cyan-600"></i>
                                 </div>
-                            )}
+                                <div>
+                                    <p className="font-semibold text-gray-800 text-sm">Comentario</p>
+                                    <p className="text-xs text-gray-500">{order.comment || 'Sin comentarios'}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
