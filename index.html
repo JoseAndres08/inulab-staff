@@ -524,9 +524,8 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, onClose }) => {
                             </div>
                         )}
                         {!loading && !error && blobUrl && (
-                            <div className="flex flex-col items-center gap-3 cursor-pointer w-full px-4" onClick={()=>window.open(blobUrl,'_blank')}>
-                                <i className="fas fa-file-pdf text-6xl text-red-400"></i>
-                                <p className="text-sm text-gray-500">Toca para ver el PDF completo</p>
+                            <div className="w-full" style={{height:'420px'}}>
+                                <iframe src={blobUrl} className="w-full h-full rounded-xl border border-gray-200"/>
                             </div>
                         )}
                     </div>
