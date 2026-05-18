@@ -198,6 +198,7 @@ const api = {
     getNightMode:     ()        => api.call('GET',  '/api/Config/nightmode'),
     setNightMode:     (active)  => api.call('PUT',  '/api/Config/nightmode', { active }),
     getMotoLocation:  (id)      => api.call('GET', `/api/Orders/${id}/location`).catch(() => null),
+    getUser:          (id)      => api.call('GET', `/api/Users/${id}`).catch(() => null),
 };
 
 // Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
@@ -565,6 +566,49 @@ const AssignModal = ({ order, onClose, onAssign }) => {
     );
 };
 
+// ── PHONE BUTTON ─────────────────────────────────────────────────────────
+const PhoneButton = ({ userId }) => {
+    const [phone, setPhone] = React.useState(null);
+    const [showPopup, setShowPopup] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+
+    const handleCall = async () => {
+        let p = phone;
+        if (!p) {
+            setLoading(true);
+            try {
+                const u = await api.getUser(userId);
+                p = u?.phone || u?.phoneNumber || u?.telefono || null;
+                if (p) setPhone(p);
+            } catch {}
+            setLoading(false);
+        }
+        if (!p) { alert('Este cliente no tiene teléfono registrado'); return; }
+        // Intentar abrir llamada (funciona en móvil/tablet)
+        window.location.href = `tel:${p}`;
+        // Mostrar popup con número (útil en PC)
+        setShowPopup(true);
+        setTimeout(() => setShowPopup(false), 4000);
+    };
+
+    return (
+        <div className="relative">
+            <button onClick={handleCall} className="w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center transition-colors" title="Llamar">
+                {loading ? <i className="fas fa-spinner fa-spin text-xs"></i> : <i className="fas fa-phone text-xs"></i>}
+            </button>
+            {showPopup && phone && (
+                <div className="absolute bottom-10 right-0 bg-gray-900 text-white text-xs rounded-xl px-3 py-2 whitespace-nowrap shadow-xl z-50 flex items-center gap-2">
+                    <i className="fas fa-phone text-green-400"></i>
+                    <span className="font-mono font-bold">{phone}</span>
+                    <button onClick={() => {navigator.clipboard.writeText(phone); setShowPopup(false);}} className="ml-1 text-gray-400 hover:text-white">
+                        <i className="fas fa-copy text-xs"></i>
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ── TRACKING MODAL ───────────────────────────────────────────────────────
 const TrackingModal = ({ order, onClose }) => {
     const STEPS = [
@@ -722,7 +766,7 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                     {order.invoicePdf&&<button onClick={()=>setShowPdf({url:order.invoicePdf,title:order.documentType==='boleta'?'Boleta':'Factura',sub:order.userName,icon:'fa-receipt'})} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors border border-gray-200"><i className="fas fa-eye mr-1"></i>Ver comprobante</button>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                    <button className="w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center transition-colors" title="Llamar"><i className="fas fa-phone text-xs"></i></button>
+                    <PhoneButton userId={order.userId}/>
                     <button onClick={()=>setShowTracking(true)} className="w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg flex items-center justify-center transition-colors" title="Tracking"><i className="fas fa-motorcycle text-xs"></i></button>
                 </div>
             </div>
