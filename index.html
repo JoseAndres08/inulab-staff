@@ -540,10 +540,10 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, onClose }) => {
     );
 };
 
-// ── PDF MODAL (alias para compatibilidad) ─────────────────────────────────
+// ── PDF MODAL (alias para compatibilidad - renderiza dentro del layout) ──────
 const PdfModal = ({ title, subtitle, icon, pdfUrl, date, onClose }) => {
     return (
-        <div className="fixed inset-0 bg-white z-[300] flex flex-col">
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
             <PdfViewer title={title} subtitle={subtitle} icon={icon} pdfUrl={pdfUrl} date={date} onClose={onClose}/>
         </div>
     );
@@ -987,7 +987,7 @@ const SeccionResultados = ({ orders }) => {
     const anyFilter = search || filterDay || filterMonth || filterYear;
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-purple-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-medical"></i>Resultados</span>
@@ -1068,7 +1068,7 @@ const SeccionFacturacion = ({ orders }) => {
     const anyFilter = search || filterDay || filterMonth || filterYear;
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full relative">
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-amber-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-invoice-dollar"></i>Facturación</span>
