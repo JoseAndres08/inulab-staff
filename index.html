@@ -753,75 +753,75 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
                         </div>
                     </div>
                     {/* Detalle + comentario del lab — fijo */}
-                    <div className="w-72 flex-shrink-0 flex flex-col gap-3">
-                        <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                            <h3 className="font-bold text-gray-800 mb-3">Detalle del pedido</h3>
-                            <div className="space-y-3">
-                                {order.items.map((it, i) => (
-                                    <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                                        <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <i className="fas fa-vial text-cyan-600 text-xs"></i>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800 text-sm">{it.exam?.name}</p>
-                                            <p className="text-xs text-gray-500">{it.pet?.name}</p>
-                                        </div>
+                    <div className="w-80 flex-shrink-0 flex flex-col gap-3 overflow-y-auto hide-scrollbar">
+                        <div className="bg-white rounded-2xl border border-gray-200 p-4 flex flex-col gap-3">
+                            <h3 className="font-bold text-gray-800 mb-1">Detalle del pedido</h3>
+                            {order.items.map((it, i) => (
+                                <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
+                                    <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i className="fas fa-vial text-cyan-600 text-xs"></i>
                                     </div>
-                                ))}
-                                {item?.address && (
-                                    <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
-                                        <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <i className="fas fa-map-marker-alt text-cyan-600 text-xs"></i>
+                                    <div>
+                                        <p className="font-semibold text-gray-800 text-sm">{it.exam?.name}</p>
+                                        <p className="text-xs text-gray-500">{it.pet?.name}</p>
+                                    </div>
+                                </div>
+                            ))}
+                            {item?.address && (
+                                <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                                    <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i className="fas fa-map-marker-alt text-cyan-600 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-800 text-sm">Dirección</p>
+                                        <p className="text-xs text-gray-500">{item.address?.address}, {item.address?.district}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Comentario del cliente */}
+                            <div className="flex items-start gap-3 bg-gray-50 rounded-xl p-3">
+                                <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i className="fas fa-comment text-cyan-600 text-xs"></i>
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-gray-800 text-sm">Comentario</p>
+                                    <p className="text-xs text-gray-500">{order.comment || 'Sin comentarios'}</p>
+                                </div>
+                            </div>
+                            {/* Instrucciones al cliente - expandible dentro del mismo recuadro */}
+                            <div className="border-t border-gray-100 pt-3">
+                                {!showInstrucciones ? (
+                                    <button onClick={()=>setShowInstrucciones(true)}
+                                        className="w-full py-2 bg-gray-50 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 text-gray-600 hover:text-cyan-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                                        <i className="fas fa-comment-medical text-cyan-500"></i>
+                                        Agregar instrucciones al cliente
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-xs font-bold text-gray-700 flex items-center gap-1">
+                                                <i className="fas fa-comment-medical text-cyan-600"></i>
+                                                Instrucciones al cliente
+                                            </p>
+                                            <button onClick={()=>setShowInstrucciones(false)} className="text-gray-400 hover:text-gray-600"><i className="fas fa-times text-xs"></i></button>
                                         </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800 text-sm">Dirección</p>
-                                            <p className="text-xs text-gray-500">{item.address?.address}, {item.address?.district}</p>
-                                        </div>
+                                        <textarea
+                                            value={labComment}
+                                            onChange={e => setLabComment(e.target.value)}
+                                            placeholder="Ej: Ayunar 8 horas antes, traer muestra en frasco estéril..."
+                                            rows={3}
+                                            className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-xs resize-none focus:border-cyan-500 focus:outline-none"
+                                        />
+                                        <button onClick={saveComment} disabled={saving}
+                                            className="w-full py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                                            {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> :
+                                             saved  ? <><i className="fas fa-check"></i>Enviado</> :
+                                                      <><i className="fas fa-paper-plane"></i>Enviar al cliente</>}
+                                        </button>
                                     </div>
                                 )}
                             </div>
                         </div>
-                        {/* Comentario del cliente - siempre visible */}
-                        <div className="bg-gray-50 rounded-xl p-3 flex items-start gap-3">
-                            <div className="w-9 h-9 bg-cyan-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <i className="fas fa-comment text-cyan-600 text-xs"></i>
-                            </div>
-                            <div>
-                                <p className="font-semibold text-gray-800 text-sm">Comentario</p>
-                                <p className="text-xs text-gray-500">{order.comment || 'Sin comentarios'}</p>
-                            </div>
-                        </div>
-                        {/* Instrucciones al cliente - expandible */}
-                        {!showInstrucciones ? (
-                            <button onClick={()=>setShowInstrucciones(true)}
-                                className="w-full py-2.5 bg-gray-100 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 text-gray-700 hover:text-cyan-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2">
-                                <i className="fas fa-comment-medical text-cyan-500"></i>
-                                Agregar instrucciones al cliente
-                            </button>
-                        ) : (
-                            <div className="bg-white rounded-2xl border border-cyan-200 p-4 flex flex-col gap-2">
-                                <div className="flex items-center justify-between mb-1">
-                                    <p className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                                        <i className="fas fa-comment-medical text-cyan-600"></i>
-                                        Instrucciones al cliente
-                                    </p>
-                                    <button onClick={()=>setShowInstrucciones(false)} className="text-gray-400 hover:text-gray-600"><i className="fas fa-times text-xs"></i></button>
-                                </div>
-                                <textarea
-                                    value={labComment}
-                                    onChange={e => setLabComment(e.target.value)}
-                                    placeholder="Ej: Ayunar 8 horas antes, traer muestra en frasco estéril..."
-                                    rows={3}
-                                    className="w-full px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 text-xs resize-none focus:border-cyan-500 focus:outline-none"
-                                />
-                                <button onClick={saveComment} disabled={saving}
-                                    className="w-full py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                                    {saving ? <><i className="fas fa-spinner fa-spin"></i>Guardando...</> :
-                                     saved  ? <><i className="fas fa-check"></i>Enviado</> :
-                                              <><i className="fas fa-paper-plane"></i>Enviar al cliente</>}
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
