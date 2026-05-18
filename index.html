@@ -600,10 +600,11 @@ const TrackingModal = ({ order, onClose }) => {
                     </button>
                 </div>
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-5 min-h-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Timeline */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                <div className="flex-1 min-h-0 flex gap-4 p-5">
+                    {/* Timeline - scrollable */}
+                    <div className="flex-1 bg-white rounded-2xl border border-gray-200 p-5 overflow-y-auto">
+                        <div className="grid grid-cols-1 gap-4">
+                        <div>
                             <h3 className="font-bold text-gray-800 mb-4">Estado del pedido</h3>
                             <div className="space-y-0">
                                 {STEPS.filter((s,i,arr) => {
@@ -635,8 +636,11 @@ const TrackingModal = ({ order, onClose }) => {
                                 })}
                             </div>
                         </div>
-                        {/* Order detail */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                        </div>
+                        </div>
+                    </div>
+                    {/* Detalle - fijo */}
+                    <div className="w-80 flex-shrink-0 bg-white rounded-2xl border border-gray-200 p-5 self-start">
                             <h3 className="font-bold text-gray-800 mb-4">Detalle del pedido</h3>
                             <div className="space-y-3">
                                 {order.items.map((item, i) => (
@@ -673,7 +677,6 @@ const TrackingModal = ({ order, onClose }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -732,8 +735,8 @@ const OrderCard = ({ order, nightMode, onStatusChange, onSuccess, highlight }) =
                     {order.invoicePdf&&<button onClick={()=>setShowPdf({url:order.invoicePdf,title:order.documentType==='boleta'?'Boleta':'Factura',sub:order.userName,icon:'fa-receipt'})} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors border border-gray-200"><i className="fas fa-eye mr-1"></i>Ver comprobante</button>}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                    <button className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1"><i className="fas fa-phone text-xs"></i>Llamar</button>
-                    <button onClick={()=>setShowTracking(true)} className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1"><i className="fas fa-motorcycle text-xs"></i>Tracking</button>
+                    <button className="w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded-lg flex items-center justify-center transition-colors" title="Llamar"><i className="fas fa-phone text-xs"></i></button>
+                    <button onClick={()=>setShowTracking(true)} className="w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg flex items-center justify-center transition-colors" title="Tracking"><i className="fas fa-motorcycle text-xs"></i></button>
                 </div>
             </div>
 
