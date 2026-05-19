@@ -200,6 +200,7 @@ const api = {
     getMotoLocation:  (id)      => api.call('GET', `/api/Orders/${id}/location`).catch(() => null),
     getUser:          (id)      => api.call('GET', `/api/Users/${id}`).catch(() => null),
     updateComment:    (id, comment) => api.call('PUT', `/api/Orders/${id}/comment`, { comment }),
+    getPet:           (id)      => api.call('GET', `/api/Pets/${id}`).catch(() => null),
 };
 
 // Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
@@ -990,6 +991,15 @@ const SeccionPacientes = ({ orders }) => {
     const [filterDay, setFilterDay] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
     const [filterYear, setFilterYear] = useState('');
+    const [petDetails, setPetDetails] = useState({});
+
+    React.useEffect(() => {
+        if (selPet?.id && !petDetails[selPet.id]) {
+            api.getPet(selPet.id).then(data => {
+                if (data) setPetDetails(prev => ({...prev, [selPet.id]: data}));
+            });
+        }
+    }, [selPet]);
 
     const allPets = []; const seen = new Set(); const petLatestDate = {};
     orders.forEach(o => { o.items.forEach(it => { const key = it.pet?.id||it.pet?.name; if (!key) return; if (!petLatestDate[key] || new Date(o.date) > new Date(petLatestDate[key])) petLatestDate[key] = o.date; if (!seen.has(key)) { seen.add(key); allPets.push({...it.pet, ownerClient:o.userName, orderId:o.id}); } }); });
@@ -1036,8 +1046,7 @@ const SeccionPacientes = ({ orders }) => {
             return true;
         });
 
-        const sexIcon = selPet.sex === 'macho' || selPet.sex === 'male' ? 'fa-mars' : selPet.sex === 'hembra' || selPet.sex === 'female' ? 'fa-venus' : null;
-        const sexColor = selPet.sex === 'macho' || selPet.sex === 'male' ? 'text-blue-500' : 'text-pink-500';
+
 
         return (
             <div className="flex flex-col h-full">
@@ -1053,11 +1062,7 @@ const SeccionPacientes = ({ orders }) => {
                                 <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">{filteredExams.length} exámenes</span>
                             </div>
                             <p className="text-gray-500 text-sm">Cliente: {selPet.owner||selPet.ownerClient}</p>
-                            <div className="flex items-center gap-3 mt-1 flex-wrap">
-                                {selPet.breed&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-paw text-cyan-500 text-xs"></i>{selPet.breed}</span>}
-                                {selPet.age&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-birthday-cake text-cyan-500 text-xs"></i>{selPet.age}</span>}
-                                {sexIcon&&<span className="text-xs flex items-center gap-1"><i className={`fas ${sexIcon} ${sexColor} text-xs`}></i><span className="text-gray-500">{selPet.sex==='macho'||selPet.sex==='male'?'Macho':'Hembra'}</span></span>}
-                            </div>
+                            {(()=>{const d=petDetails[selPet.id]||selPet; const breed=d.breed||d.Breed; const age=d.age||d.Age; const sex=(d.sex||d.Sex||'').toLowerCase(); const si=sex==='macho'||sex==='male'?'fa-mars':sex==='hembra'||sex==='female'?'fa-venus':null; const sc=sex==='macho'||sex==='male'?'text-blue-500':'text-pink-500'; return(<div className="flex items-center gap-3 mt-1 flex-wrap">{breed&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-paw text-cyan-500 text-xs"></i>{breed}</span>}{age&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-birthday-cake text-cyan-500 text-xs"></i>{age} años</span>}{si&&<span className="text-xs flex items-center gap-1"><i className={`fas ${si} ${sc} text-xs`}></i><span className="text-gray-500">{sex==='macho'||sex==='male'?'Macho':'Hembra'}</span></span>}</div>);})()}
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
