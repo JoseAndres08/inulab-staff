@@ -980,11 +980,19 @@ const SeccionPedidos = ({ orders, onStatusChange, onSuccess, onRefresh }) => {
 
 // ── SECCIÓN PACIENTES ─────────────────────────────
 const SeccionPacientes = ({ orders }) => {
-    const [search, setSearch] = useState(''); const [selPet, setSelPet] = useState(null); const [selExam, setSelExam] = useState(null);
+    const [search, setSearch] = useState('');
+    const [filterDay, setFilterDay] = useState('');
+    const [filterMonth, setFilterMonth] = useState('');
+    const [filterYear, setFilterYear] = useState('');
+    const [selPet, setSelPet] = useState(null);
+    const [selExam, setSelExam] = useState(null);
+
     const allPets = []; const seen = new Set();
     orders.forEach(o => { o.items.forEach(it => { const key = it.pet?.id||it.pet?.name; if (key&&!seen.has(key)) { seen.add(key); allPets.push({...it.pet, ownerClient:o.userName, orderId:o.id}); } }); });
     const filtered = allPets.filter(p => !search||p.name?.toLowerCase().includes(search.toLowerCase())||p.owner?.toLowerCase().includes(search.toLowerCase())||p.ownerClient?.toLowerCase().includes(search.toLowerCase()));
+
     if (selExam) return <PdfModal title={selExam.type} subtitle={selExam.petName} icon="fa-file-pdf" pdfUrl={selExam.pdfData} onClose={()=>setSelExam(null)}/>;
+
     if (selPet) {
         const petOrders = orders.filter(o => o.items.some(it => {
             if (selPet.id && it.pet?.id) return it.pet.id === selPet.id;
@@ -995,34 +1003,123 @@ const SeccionPacientes = ({ orders }) => {
                 if (selPet.id && it.pet?.id) return it.pet.id === selPet.id;
                 return it.pet?.name === selPet.name && it.pet?.name;
             })
-            .map(it => ({...it, orderId: o.id, orderDate: o.date}))
-        );
+            .map(it => ({...it, orderId: o.id, orderDate: o.date, orderStatus: o.status}))
+        ).sort((a,b) => new Date(b.orderDate)-new Date(a.orderDate));
+
+        const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const dias = Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0'));
+        const years = [...new Set(exams.map(e => new Date(e.orderDate).getFullYear()))].sort((a,b)=>b-a);
+
+        const filteredExams = exams.filter(ex => {
+            const d = new Date(ex.orderDate);
+            if (filterDay && String(d.getDate()).padStart(2,'0') !== filterDay) return false;
+            if (filterMonth && String(d.getMonth()+1).padStart(2,'0') !== filterMonth) return false;
+            if (filterYear && String(d.getFullYear()) !== filterYear) return false;
+            return true;
+        });
+
+        const sexIcon = selPet.sex === 'macho' || selPet.sex === 'male' ? 'fa-mars' : selPet.sex === 'hembra' || selPet.sex === 'female' ? 'fa-venus' : null;
+        const sexColor = selPet.sex === 'macho' || selPet.sex === 'male' ? 'text-blue-500' : 'text-pink-500';
+
         return (
             <div className="flex flex-col h-full">
-                <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><button onClick={()=>setSelPet(null)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors"><i className="fas fa-arrow-left text-sm"></i></button><PetPhoto photo={selPet.photo} size="xl"/><div><div>
-                            <p className="text-gray-800 font-bold text-lg">{selPet.name}</p>
-                            <p className="text-gray-600 text-sm">{selPet.owner?`Dueño: ${selPet.owner}`:(selPet.ownerClient&&selPet.ownerClient!=='Pedido web')?`Cliente: ${selPet.ownerClient}`:''}</p>
+                {/* Header fijo */}
+                <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                        <button onClick={()=>{setSelPet(null);setFilterDay('');setFilterMonth('');setFilterYear('');}} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600 transition-colors">
+                            <i className="fas fa-arrow-left text-sm"></i>
+                        </button>
+                        <PetPhoto photo={selPet.photo} size="xl"/>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-gray-800 font-bold text-lg">{selPet.name}</p>
+                                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">{filteredExams.length} exámenes</span>
+                            </div>
+                            <p className="text-gray-500 text-sm">{selPet.owner?`Dueño: ${selPet.owner}`:(selPet.ownerClient&&selPet.ownerClient!=='Pedido web')?`Cliente: ${selPet.ownerClient}`:''}</p>
                             <div className="flex items-center gap-3 mt-1 flex-wrap">
                                 {selPet.breed&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-paw text-cyan-500 text-xs"></i>{selPet.breed}</span>}
                                 {selPet.age&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className="fas fa-birthday-cake text-cyan-500 text-xs"></i>{selPet.age} {typeof selPet.age==='number'?'años':''}</span>}
-                                {selPet.sex&&<span className="text-xs text-gray-500 flex items-center gap-1"><i className={`fas ${selPet.sex==='macho'||selPet.sex==='male'?'fa-mars text-blue-500':'fa-venus text-pink-500'} text-xs`}></i>{selPet.sex==='macho'||selPet.sex==='male'?'Macho':'Hembra'}</span>}
+                                {sexIcon&&<span className="text-xs flex items-center gap-1"><i className={`fas ${sexIcon} ${sexColor} text-xs`}></i><span className="text-gray-500">{selPet.sex==='macho'||selPet.sex==='male'?'Macho':'Hembra'}</span></span>}
                             </div>
-                        </div></div></div></div>
+                        </div>
+                    </div>
+                    {/* Buscador y filtros */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <div className="relative flex-1 min-w-36">
+                            <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            <input placeholder="Buscar examen..." className="w-full pl-8 pr-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-cyan-400 focus:outline-none" readOnly/>
+                        </div>
+                        <span className="text-xs text-gray-400">Filtrar por:</span>
+                        <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:outline-none">
+                            <option value="">Día</option>
+                            {dias.map(d=><option key={d} value={d}>{d}</option>)}
+                        </select>
+                        <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:outline-none">
+                            <option value="">Mes</option>
+                            {meses.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+                        </select>
+                        <select value={filterYear} onChange={e=>setFilterYear(e.target.value)} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:outline-none">
+                            <option value="">Año</option>
+                            {years.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                        </select>
+                    </div>
+                </div>
+                {/* Lista exámenes */}
                 <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
-                    {exams.length===0?(<div className="text-center py-12"><i className="fas fa-folder-open text-4xl mb-2 block text-gray-300"></i><p className="text-gray-600">Sin exámenes</p></div>):(
-                        <div className="space-y-3">{exams.map((ex,i)=>(<div key={i} onClick={()=>ex.pdfData&&setSelExam({type:ex.exam?.name,petName:selPet.name,pdfData:ex.pdfData})} className={`bg-white rounded-xl p-4 flex items-center gap-4 border border-gray-200 ${ex.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-pdf text-xl text-purple-600"></i></div><div className="flex-1"><p className="text-gray-800 font-semibold text-sm">{ex.exam?.name}</p><p className="text-gray-600 text-xs">{new Date(ex.orderDate).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{ex.pdfData&&<i className="fas fa-eye text-purple-600 text-sm"></i>}</div>))}</div>
+                    {filteredExams.length===0?(
+                        <div className="text-center py-12 text-gray-400"><i className="fas fa-file-medical text-4xl mb-2 block"></i>Sin exámenes</div>
+                    ):(
+                        <div className="space-y-2">
+                            {filteredExams.map((ex,i)=>(
+                                <div key={i} onClick={()=>ex.pdfData&&setSelExam({type:ex.exam?.name,petName:getPetFullName(ex.pet),pdfData:ex.pdfData})}
+                                    className={`bg-white rounded-xl p-4 flex items-center gap-3 border transition-all ${ex.pdfData?'cursor-pointer hover:border-purple-300 hover:shadow-sm border-gray-200':'border-gray-100 opacity-70'}`}>
+                                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i className={`fas fa-file-pdf text-purple-${ex.pdfData?'600':'300'}`}></i>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-gray-800 font-semibold text-sm truncate">{ex.exam?.name}</p>
+                                        <p className="text-gray-400 text-xs">{new Date(ex.orderDate).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>
+                                    </div>
+                                    {ex.pdfData&&<i className="fas fa-eye text-purple-400 text-sm flex-shrink-0"></i>}
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>
         );
     }
+
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4"><div className="flex items-center gap-3"><span className="text-emerald-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-paw"></i>Pacientes<span className="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">{allPets.length}</span></span><div className="relative flex-1"><i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nombre o dueño..." className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 text-sm focus:border-emerald-500 focus:outline-none"/></div></div></div>
-            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar"><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">{filtered.map((pet,i)=>(<div key={i} onClick={()=>setSelPet(pet)} className="bg-white rounded-xl p-4 flex items-center gap-3 border border-gray-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all"><PetPhoto photo={pet.photo} size="xl"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-medium truncate">{pet.name}</p>{pet.owner?<p className="text-gray-600 text-xs truncate">Dueño: {pet.owner}</p>:(pet.ownerClient&&pet.ownerClient!=='Pedido web'&&pet.ownerClient!=='Cliente')?<p className="text-gray-600 text-xs truncate">Cliente: {pet.ownerClient}</p>:null}</div><i className="fas fa-chevron-right text-gray-400 text-xs flex-shrink-0"></i></div>))}</div></div>
+            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+                <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar paciente o cliente..."
+                        className="w-full pl-8 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-cyan-400 focus:outline-none"/>
+                </div>
+            </div>
+            <div className="flex-1 overflow-y-auto hide-scrollbar">
+                {filtered.length===0?(
+                    <div className="text-center py-12 text-gray-400"><i className="fas fa-paw text-4xl mb-2 block"></i>Sin pacientes</div>
+                ):(
+                    <div className="divide-y divide-gray-100">
+                        {filtered.map((p,i)=>(
+                            <button key={i} onClick={()=>setSelPet(p)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                                <PetPhoto photo={p.photo} size="lg"/>
+                                <div>
+                                    <p className="text-gray-800 font-semibold text-sm">{p.name}</p>
+                                    <p className="text-gray-500 text-xs">{p.owner||p.ownerClient}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
+
 
 // ── SECCIÓN RESULTADOS ────────────────────────────
 const SeccionResultados = ({ orders }) => {
