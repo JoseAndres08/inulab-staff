@@ -1093,25 +1093,36 @@ const SeccionPacientes = ({ orders }) => {
     return (
         <div className="flex flex-col h-full">
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
-                <div className="relative">
-                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar paciente o cliente..."
-                        className="w-full pl-8 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-cyan-400 focus:outline-none"/>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-emerald-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-paw"></i>Pacientes</span>
+                    <div className="relative flex-1 min-w-36">
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar paciente o cliente..."
+                            className="w-full pl-8 pr-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-emerald-400 focus:outline-none"/>
+                    </div>
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto hide-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
                 {filtered.length===0?(
                     <div className="text-center py-12 text-gray-400"><i className="fas fa-paw text-4xl mb-2 block"></i>Sin pacientes</div>
                 ):(
-                    <div className="divide-y divide-gray-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">
                         {filtered.map((p,i)=>(
-                            <button key={i} onClick={()=>setSelPet(p)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
-                                <PetPhoto photo={p.photo} size="lg"/>
-                                <div>
-                                    <p className="text-gray-800 font-semibold text-sm">{p.name}</p>
-                                    <p className="text-gray-500 text-xs">{p.owner||p.ownerClient}</p>
+                            <div key={i} onClick={()=>setSelPet(p)}
+                                className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all">
+                                <div className="flex items-center gap-3">
+                                    <PetPhoto photo={p.photo} size="lg"/>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-gray-800 font-semibold text-sm truncate">{p.name}</p>
+                                        <p className="text-gray-500 text-xs truncate">{p.owner||p.ownerClient}</p>
+                                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                            {p.breed&&<span className="text-xs text-gray-400 flex items-center gap-1"><i className="fas fa-paw text-cyan-400 text-xs"></i>{p.breed}</span>}
+                                            {p.sex&&<span className="text-xs flex items-center gap-1"><i className={`fas ${p.sex==='macho'||p.sex==='male'?'fa-mars text-blue-400':'fa-venus text-pink-400'} text-xs`}></i></span>}
+                                        </div>
+                                    </div>
+                                    <i className="fas fa-chevron-right text-gray-300 text-xs flex-shrink-0"></i>
                                 </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 )}
