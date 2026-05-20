@@ -384,6 +384,8 @@ const STATUS_MAP = {
 
 const getStatusInfo = (s) => STATUS_MAP[s] || STATUS_MAP['pending'];
 
+const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
 const normalizeOrder = (o) => {
     const statusList = ['pending','assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received','arrived_at_lab','processing','results_uploaded','completed'];
     const status = typeof o.status === 'number' ? (statusList[o.status] || 'pending') : (o.status || 'pending');
@@ -1003,7 +1005,7 @@ const SeccionPacientes = ({ orders }) => {
 
     const allPets = []; const seen = new Set(); const petLatestDate = {};
     orders.forEach(o => { o.items.forEach(it => { const key = it.pet?.id||it.pet?.name; if (!key) return; if (!petLatestDate[key] || new Date(o.date) > new Date(petLatestDate[key])) petLatestDate[key] = o.date; if (!seen.has(key)) { seen.add(key); allPets.push({...it.pet, ownerClient:o.userName, orderId:o.id}); } }); });
-    const filtered = allPets.filter(p => !search||p.name?.toLowerCase().includes(search.toLowerCase())||p.owner?.toLowerCase().includes(search.toLowerCase())||p.ownerClient?.toLowerCase().includes(search.toLowerCase()));
+    const filtered = allPets.filter(p => !search||norm(p.name).includes(norm(search))||norm(p.owner).includes(norm(search))||norm(p.ownerClient).includes(norm(search)));
 
     const mesesP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const diasP = Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0'));
@@ -1040,7 +1042,7 @@ const SeccionPacientes = ({ orders }) => {
 
         const filteredExams = exams.filter(ex => {
             const d = new Date(ex.orderDate);
-            if (search && !ex.exam?.name?.toLowerCase().includes(search.toLowerCase())) return false;
+            if (search && !norm(ex.exam?.name).includes(norm(search))) return false;
             if (filterDay && String(d.getDate()).padStart(2,'0') !== filterDay) return false;
             if (filterMonth && String(d.getMonth()+1).padStart(2,'0') !== filterMonth) return false;
             if (filterYear && String(d.getFullYear()) !== filterYear) return false;
@@ -1184,7 +1186,7 @@ const SeccionResultados = ({ orders }) => {
 
     const filtered = allExams.filter(ex => {
         const d = new Date(ex.date);
-        if (search && !ex.examName?.toLowerCase().includes(search.toLowerCase()) && !ex.petName?.toLowerCase().includes(search.toLowerCase()) && !ex.clientName?.toLowerCase().includes(search.toLowerCase())) return false;
+        if (search && !norm(ex.examName).includes(norm(search)) && !norm(ex.petName).includes(norm(search)) && !norm(ex.clientName).includes(norm(search))) return false;
         if (filterDay && String(d.getDate()).padStart(2,'0') !== filterDay) return false;
         if (filterMonth && String(d.getMonth()+1).padStart(2,'0') !== filterMonth) return false;
         if (filterYear && String(d.getFullYear()) !== filterYear) return false;
