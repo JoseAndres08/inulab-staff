@@ -1040,6 +1040,7 @@ const SeccionPacientes = ({ orders }) => {
 
         const filteredExams = exams.filter(ex => {
             const d = new Date(ex.orderDate);
+            if (search && !ex.exam?.name?.toLowerCase().includes(search.toLowerCase())) return false;
             if (filterDay && String(d.getDate()).padStart(2,'0') !== filterDay) return false;
             if (filterMonth && String(d.getMonth()+1).padStart(2,'0') !== filterMonth) return false;
             if (filterYear && String(d.getFullYear()) !== filterYear) return false;
@@ -1068,7 +1069,7 @@ const SeccionPacientes = ({ orders }) => {
                     <div className="flex items-center gap-2 flex-wrap">
                         <div className="relative flex-1 min-w-36">
                             <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                            <input placeholder="Buscar examen..." className="w-full pl-8 pr-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-cyan-400 focus:outline-none" readOnly/>
+                            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar examen..." className="w-full pl-8 pr-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-700 focus:border-cyan-400 focus:outline-none"/>
                         </div>
                         <span className="text-xs text-gray-400">Filtrar por:</span>
                         <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm focus:outline-none">
