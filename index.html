@@ -409,6 +409,7 @@ const normalizeOrder = (o) => {
         resultPdf: orderResultPdf,
         assignedTo: o.motorizadoId || o.assignedTo || null,
         motoName: o.motorizado?.username || o.motoName || null,
+        requiresSampling: o.requiresSampling || false,
     };
 };
 
@@ -886,6 +887,10 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
             </div>
             {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
             {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
+            {order.requiresSampling
+                ? <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Necesita toma de muestra a domicilio (+S/ 50)</p>
+                : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Ya tiene la muestra</p>
+            }
             {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
             <div className="flex items-center justify-between gap-2 mt-2">
                 <div className="flex flex-wrap gap-2">
