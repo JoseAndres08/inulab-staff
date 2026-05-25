@@ -936,7 +936,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                     <PhoneButton userId={order.userId}/>
-                    <button onClick={()=>setShowTracking(true)} className="w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg flex items-center justify-center transition-colors" title="Tracking"><i className="fas fa-motorcycle text-xs"></i></button>
+                    {order.status!=='completed'&&<button onClick={()=>setShowTracking(true)} className="w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg flex items-center justify-center transition-colors" title="Tracking"><i className="fas fa-motorcycle text-xs"></i></button>}
                 </div>
             </div>
             {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
