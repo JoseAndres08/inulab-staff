@@ -1606,7 +1606,7 @@ const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, set
 // ── SECCIÓN USUARIOS ──────────────────────────────
 const CODIGO_SECRETO = '12345678';
 
-const SeccionUsuarios = () => {
+const SeccionUsuarios = ({ currentUser }) => {
     const [admins, setAdmins] = React.useState([]);
     const [motos, setMotos]   = React.useState([]);
     const [loading, setLoading] = React.useState(true);
@@ -1673,10 +1673,12 @@ const SeccionUsuarios = () => {
                     {tipo==='admin'?'Administrador':'Motorizado'}
                 </span>
             </div>
-            <button onClick={()=>setConfirmDel(u)}
-                className="w-8 h-8 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-center text-red-500 transition-colors flex-shrink-0">
-                <i className="fas fa-trash-alt text-xs"></i>
-            </button>
+            {(currentUser?.username === 'admin') && (
+                <button onClick={()=>setConfirmDel(u)}
+                    className="w-8 h-8 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-center text-red-500 transition-colors flex-shrink-0">
+                    <i className="fas fa-trash-alt text-xs"></i>
+                </button>
+            )}
         </div>
     );
 
@@ -1913,7 +1915,7 @@ const App = () => {
                         {view==='resultados'    && <SeccionResultados orders={orders}/>}
                         {view==='facturacion'   && <SeccionFacturacion orders={orders}/>}
                         {view==='catalogo'      && <SeccionCatalogo/>}
-                        {view==='usuarios'      && <SeccionUsuarios/>}
+                        {view==='usuarios'      && <SeccionUsuarios currentUser={user}/>}
                         {view==='configuracion' && (
                             <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
                                 <div className="max-w-md">
