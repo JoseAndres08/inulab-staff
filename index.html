@@ -1651,7 +1651,7 @@ const SeccionUsuarios = () => {
         if (form.codigo !== CODIGO_SECRETO) return setErr('Código secreto incorrecto');
         setSaving(true);
         try {
-            await api.registrar({ username: form.username.trim(), password: form.password, role: form.rol });
+            await api.registrar({ username: form.username.trim(), password: form.password, type: form.rol });
             setOk('✅ Usuario creado correctamente');
             setForm({ username:'', password:'', rol:'admin', codigo:'' });
             setShowForm(false);
