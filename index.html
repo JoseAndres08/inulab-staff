@@ -201,6 +201,9 @@ const api = {
     getUser:          (id)      => api.call('GET', `/api/Users/${id}`).catch(() => null),
     updateComment:    (id, comment) => api.call('PUT', `/api/Orders/${id}/comment`, { comment }),
     getPet:           (id)      => api.call('GET', `/api/Pets/${id}`).catch(() => null),
+    getUsuarios:      ()        => api.call('GET', '/api/Users/motorizados').catch(() => []),
+    getAdmins:        ()        => api.call('GET', '/api/Users/doctors').catch(() => []),
+    registrar:        (data)    => api.call('POST', '/api/Auth/registrarse', data),
 };
 
 // Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
@@ -888,7 +891,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
             {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
             {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
             {order.requiresSampling
-                ? <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Necesita toma de muestra a domicilio (+S/ 50)</p>
+                ? <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Necesita toma de muestra a domicilio</p>
                 : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Ya tiene la muestra</p>
             }
             {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
@@ -1599,6 +1602,150 @@ const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, set
     );
 };
 
+// ── SECCIÓN USUARIOS ──────────────────────────────
+const CODIGO_SECRETO = '12345678';
+
+const SeccionUsuarios = () => {
+    const [admins, setAdmins] = React.useState([]);
+    const [motos, setMotos]   = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [showForm, setShowForm] = React.useState(false);
+    const [form, setForm] = React.useState({ username:'', password:'', rol:'admin', codigo:'' });
+    const [err, setErr] = React.useState('');
+    const [ok, setOk]   = React.useState('');
+    const [saving, setSaving] = React.useState(false);
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            const [a, m] = await Promise.all([api.getAdmins(), api.getUsuarios()]);
+            setAdmins(Array.isArray(a) ? a : []);
+            setMotos(Array.isArray(m) ? m : []);
+        } catch {}
+        setLoading(false);
+    };
+
+    React.useEffect(() => { load(); }, []);
+
+    const handleCrear = async () => {
+        setErr(''); setOk('');
+        if (!form.username.trim()) return setErr('El nombre de usuario es requerido');
+        if (!form.password.trim()) return setErr('La contraseña es requerida');
+        if (form.codigo !== CODIGO_SECRETO) return setErr('Código secreto incorrecto');
+        setSaving(true);
+        try {
+            await api.registrar({ username: form.username.trim(), password: form.password, role: form.rol });
+            setOk('✅ Usuario creado correctamente');
+            setForm({ username:'', password:'', rol:'admin', codigo:'' });
+            setShowForm(false);
+            load();
+        } catch (e) {
+            setErr('Error al crear usuario: ' + e.message);
+        }
+        setSaving(false);
+    };
+
+    const UserRow = ({ u, tipo }) => (
+        <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0 ${tipo==='admin'?'bg-gradient-to-br from-cyan-500 to-blue-600':'bg-gradient-to-br from-amber-400 to-orange-500'}`}>
+                {(u.username||u.Username||'?')[0].toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-800 text-sm">{u.username||u.Username}</p>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${tipo==='admin'?'bg-blue-100 text-blue-700':'bg-amber-100 text-amber-700'}`}>
+                    {tipo==='admin'?'Administrador':'Motorizado'}
+                </span>
+            </div>
+            <i className={`fas ${tipo==='admin'?'fa-user-shield text-blue-400':'fa-motorcycle text-amber-400'} text-lg`}></i>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
+                <div className="max-w-lg">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">Usuarios</h1>
+                            <p className="text-gray-500 text-sm">Administra el equipo</p>
+                        </div>
+                        <button onClick={()=>{setShowForm(true);setErr('');setOk('');}}
+                            className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm">
+                            <i className="fas fa-plus"></i>Nuevo usuario
+                        </button>
+                    </div>
+
+                    {ok && <div className="mb-4 p-3 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-sm flex items-center gap-2"><i className="fas fa-check-circle"></i>{ok}</div>}
+
+                    {loading ? (
+                        <div className="text-center py-12 text-gray-400"><i className="fas fa-spinner fa-spin text-2xl"></i></div>
+                    ) : (
+                        <>
+                            <div className="mb-6">
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Administradores ({admins.length})</p>
+                                <div className="space-y-2">
+                                    {admins.length===0 ? <p className="text-gray-400 text-sm">Sin administradores</p> : admins.map((u,i)=><UserRow key={i} u={u} tipo="admin"/>)}
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Motorizados ({motos.length})</p>
+                                <div className="space-y-2">
+                                    {motos.length===0 ? <p className="text-gray-400 text-sm">Sin motorizados</p> : motos.map((u,i)=><UserRow key={i} u={u} tipo="moto"/>)}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Modal crear usuario */}
+            {showForm && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="font-bold text-gray-800 text-lg">Nuevo usuario</h2>
+                            <button onClick={()=>{setShowForm(false);setErr('');}} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times text-sm"></i></button>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Usuario</label>
+                                <input value={form.username} onChange={e=>setForm(f=>({...f,username:e.target.value}))}
+                                    placeholder="Nombre de usuario"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:border-cyan-400 focus:outline-none"/>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Contraseña</label>
+                                <input type="password" value={form.password} onChange={e=>setForm(f=>({...f,password:e.target.value}))}
+                                    placeholder="Contraseña"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:border-cyan-400 focus:outline-none"/>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Rol</label>
+                                <select value={form.rol} onChange={e=>setForm(f=>({...f,rol:e.target.value}))}
+                                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:border-cyan-400 focus:outline-none">
+                                    <option value="admin">Administrador</option>
+                                    <option value="motorizado">Motorizado</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Código secreto</label>
+                                <input type="password" value={form.codigo} onChange={e=>setForm(f=>({...f,codigo:e.target.value}))}
+                                    placeholder="Código de autorización"
+                                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:border-cyan-400 focus:outline-none"/>
+                            </div>
+                            {err && <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg p-2">{err}</p>}
+                            <button onClick={handleCrear} disabled={saving}
+                                className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                                {saving ? <><i className="fas fa-spinner fa-spin"></i>Creando...</> : <><i className="fas fa-user-plus"></i>Crear usuario</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ── APP PRINCIPAL ─────────────────────────────────
 const App = () => {
     const [auth, setAuth]           = useState(false);
@@ -1677,6 +1824,7 @@ const App = () => {
         { id:'resultados', label:'Resultados', icon:'fa-file-medical',   color:'text-purple-600',  active:'bg-purple-600'  },
         { id:'facturacion',label:'Facturación',icon:'fa-receipt',        color:'text-amber-600',   active:'bg-amber-600'   },
         { id:'catalogo',   label:'Catálogo',   icon:'fa-list-alt',       color:'text-indigo-600',  active:'bg-indigo-600'  },
+        { id:'usuarios',   label:'Usuarios',   icon:'fa-users',          color:'text-rose-600',    active:'bg-rose-600'    },
     ];
 
     return (
@@ -1728,6 +1876,7 @@ const App = () => {
                         {view==='resultados'    && <SeccionResultados orders={orders}/>}
                         {view==='facturacion'   && <SeccionFacturacion orders={orders}/>}
                         {view==='catalogo'      && <SeccionCatalogo/>}
+                        {view==='usuarios'      && <SeccionUsuarios/>}
                         {view==='configuracion' && (
                             <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
                                 <div className="max-w-md">
