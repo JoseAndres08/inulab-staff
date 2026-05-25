@@ -1572,28 +1572,79 @@ const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, set
         return () => { if (gpsTimer) clearInterval(gpsTimer); };
     }, [activeOrderId]);
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-                <div className="flex items-center gap-3"><div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg"><i className="fas fa-motorcycle text-white"></i></div><div><p className="font-bold text-gray-800 text-sm">{currentUser?.username||'Motorizado'}</p><p className="text-xs text-gray-600">INULABORATORIOS</p></div></div>
-                <button onClick={onLogout} className="text-xs text-gray-600 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"><i className="fas fa-sign-out-alt mr-1"></i>Salir</button>
+        <div className="min-h-screen bg-gray-100" style={{paddingTop:'env(safe-area-inset-top)',paddingBottom:'env(safe-area-inset-bottom)'}}>
+            {/* Header móvil */}
+            <div className="bg-white border-b border-gray-200 px-4 flex items-center justify-between sticky top-0 z-50 shadow-sm" style={{paddingTop:'max(12px,env(safe-area-inset-top))',paddingBottom:'12px'}}>
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <i className="fas fa-motorcycle text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <p className="font-bold text-gray-800 text-base">{currentUser?.username||'Motorizado'}</p>
+                        <p className="text-xs text-gray-500">INULABORATORIOS</p>
+                    </div>
+                </div>
+                <button onClick={onLogout} className="text-sm text-gray-600 px-4 py-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 font-medium">
+                    <i className="fas fa-sign-out-alt mr-1"></i>Salir
+                </button>
             </div>
-            <div className="p-4 max-w-lg mx-auto space-y-4 pb-10">
-                {success&&<div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-3 rounded-xl text-sm flex items-center gap-2"><i className="fas fa-check-circle text-emerald-600"></i>{success}</div>}
+
+            <div className="p-4 max-w-lg mx-auto space-y-4 pb-24">
+                {success&&<div className="bg-emerald-50 border border-emerald-300 text-emerald-800 p-4 rounded-2xl text-sm flex items-center gap-2 shadow-sm"><i className="fas fa-check-circle text-emerald-600 text-lg"></i><span className="font-semibold">{success}</span></div>}
                 {myOrders.length===0?(
-                    <div className="bg-white rounded-2xl p-12 text-center mt-4 border border-gray-200 shadow-sm"><div className="text-6xl mb-4">✅</div><p className="text-gray-800 font-semibold text-lg">Sin pedidos activos</p><p className="text-gray-600 text-sm mt-1">Los pedidos aparecerán aquí automáticamente</p></div>
+                    <div className="bg-white rounded-3xl p-12 text-center mt-6 border border-gray-200 shadow-sm">
+                        <div className="text-7xl mb-4">✅</div>
+                        <p className="text-gray-800 font-bold text-xl">Sin pedidos activos</p>
+                        <p className="text-gray-500 text-sm mt-2">Los pedidos aparecerán aquí automáticamente</p>
+                    </div>
                 ):myOrders.map(order=>{
                     const si=getStatusInfo(order.status); const addr=order.items[0]?.address;
                     const nextMap={assigned:'moto_en_camino',moto_en_camino:'moto_arrived',moto_arrived:'sample_received',pickup_in_progress:'sample_received',sample_received:'arrived_at_lab'};
-                    const nextLabel={assigned:'Estoy en camino 🏍️',moto_en_camino:'Ya llegué al cliente 📍',moto_arrived:'Muestra recogida — Voy al lab 🧪',pickup_in_progress:'Muestra recogida — Voy al lab 🧪',sample_received:'Llegué al laboratorio 🏥'};
+                    const nextLabel={assigned:'🏍️  Estoy en camino',moto_en_camino:'📍  Ya llegué al cliente',moto_arrived:'🧪  Muestra recogida — Voy al lab',pickup_in_progress:'🧪  Muestra recogida — Voy al lab',sample_received:'🏥  Llegué al laboratorio'};
                     return (
-                        <div key={order.id} className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-md">
-                            <div className={`${si.bg} px-4 py-2 flex items-center gap-2 border-b border-gray-200`}><i className={`fas ${si.icon} ${si.color} text-sm`}></i><span className={`text-sm font-bold ${si.color}`}>{si.label}</span><span className="ml-auto text-xs text-gray-600">{new Date(order.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>
-                            <div className="p-4">
-                                <div className="flex items-center justify-between mb-0.5"><p className="font-bold text-gray-800 text-base">{order.userName}</p><PhoneButton userId={order.userId}/></div>
-                                <p className="text-xs text-gray-600 mb-3">{order.userType==='medico'?'🏥 Clínica':'🐾 Dueño de mascota'}</p>
-                                {addr&&<div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-100"><p className="text-cyan-700 text-xs font-semibold mb-1"><i className="fas fa-map-marker-alt mr-1"></i>Dirección de recojo</p><p className="text-gray-800 text-sm font-medium">{addr.address}</p><p className="text-gray-600 text-xs">{addr.district}{addr.reference?' · '+addr.reference:''}</p></div>}
-                                <div className="space-y-2 mb-4">{order.items.map((item,i)=>(<div key={i} className="bg-gray-50 rounded-xl px-3 py-2.5 flex items-center gap-2 border border-gray-100"><PetPhoto photo={item.pet?.photo} size="md"/><div className="flex-1 min-w-0"><p className="text-gray-800 text-sm font-medium truncate">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs truncate">{item.exam?.name}</p></div></div>))}</div>
-                                {nextMap[order.status]&&<button onClick={async()=>{await onStatusChange(order.id,nextMap[order.status]);setSuccess('✅ Estado actualizado');setTimeout(()=>setSuccess(''),3000);}} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all">{nextLabel[order.status]}</button>}
+                        <div key={order.id} className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-lg">
+                            {/* Estado */}
+                            <div className={`${si.bg} px-5 py-3 flex items-center gap-2 border-b border-gray-100`}>
+                                <i className={`fas ${si.icon} ${si.color} text-base`}></i>
+                                <span className={`text-base font-bold ${si.color}`}>{si.label}</span>
+                                <span className="ml-auto text-xs text-gray-500">{new Date(order.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                            </div>
+                            <div className="p-5">
+                                {/* Cliente + llamada */}
+                                <div className="flex items-center justify-between mb-1">
+                                    <div>
+                                        <p className="font-bold text-gray-800 text-lg">{order.userName}</p>
+                                        <p className="text-sm text-gray-500">{order.userType==='medico'?'🏥 Clínica':'🐾 Dueño de mascota'}</p>
+                                    </div>
+                                    <PhoneButton userId={order.userId}/>
+                                </div>
+
+                                {/* Dirección */}
+                                {addr&&<div className="bg-blue-50 rounded-2xl p-4 my-4 border border-blue-100">
+                                    <p className="text-cyan-700 text-xs font-bold mb-1 uppercase tracking-wide"><i className="fas fa-map-marker-alt mr-1"></i>Dirección de recojo</p>
+                                    <p className="text-gray-800 text-base font-semibold">{addr.address}</p>
+                                    <p className="text-gray-600 text-sm">{addr.district}{addr.reference?' · '+addr.reference:''}</p>
+                                </div>}
+
+                                {/* Mascotas/exámenes */}
+                                <div className="space-y-2 mb-5">
+                                    {order.items.map((item,i)=>(
+                                        <div key={i} className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3 border border-gray-100">
+                                            <PetPhoto photo={item.pet?.photo} size="md"/>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-gray-800 text-base font-semibold truncate">{getPetFullName(item.pet)}</p>
+                                                <p className="text-gray-500 text-sm truncate">{item.exam?.name}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Botón acción principal */}
+                                {nextMap[order.status]&&<button
+                                    onClick={async()=>{await onStatusChange(order.id,nextMap[order.status]);setSuccess('✅ Estado actualizado');setTimeout(()=>setSuccess(''),3000);}}
+                                    className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 active:from-cyan-700 active:to-blue-800 text-white py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl transition-all select-none">
+                                    {nextLabel[order.status]}
+                                </button>}
                             </div>
                         </div>
                     );
