@@ -1673,7 +1673,7 @@ const SeccionUsuarios = ({ currentUser }) => {
                     {tipo==='admin'?'Administrador':'Motorizado'}
                 </span>
             </div>
-            {(currentUser?.username === 'admin') && (
+            {(currentUser?.username === 'admin') && (u.username || u.Username) !== 'admin' && (
                 <button onClick={()=>setConfirmDel(u)}
                     className="w-8 h-8 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-center text-red-500 transition-colors flex-shrink-0">
                     <i className="fas fa-trash-alt text-xs"></i>
