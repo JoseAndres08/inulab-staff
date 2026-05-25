@@ -204,6 +204,7 @@ const api = {
     getUsuarios:      ()        => api.call('GET', '/api/Users/motorizados').catch(() => []),
     getAdmins:        ()        => api.call('GET', '/api/Users/doctors').catch(() => []),
     registrar:        (data)    => api.call('POST', '/api/Auth/registrarse', data),
+    eliminarUsuario:  (id)      => api.call('DELETE', `/api/Users/${id}`),
 };
 
 // Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
@@ -1627,6 +1628,22 @@ const SeccionUsuarios = () => {
 
     React.useEffect(() => { load(); }, []);
 
+    const [confirmDel, setConfirmDel] = React.useState(null);
+
+    const handleEliminar = async (u) => {
+        const id = u.id || u.Id;
+        if (!id) return setErr('No se puede eliminar: ID no encontrado');
+        try {
+            await api.eliminarUsuario(id);
+            setOk('✅ Usuario eliminado');
+            setConfirmDel(null);
+            load();
+        } catch (e) {
+            setErr('Error al eliminar: ' + e.message);
+            setConfirmDel(null);
+        }
+    };
+
     const handleCrear = async () => {
         setErr(''); setOk('');
         if (!form.username.trim()) return setErr('El nombre de usuario es requerido');
@@ -1656,7 +1673,10 @@ const SeccionUsuarios = () => {
                     {tipo==='admin'?'Administrador':'Motorizado'}
                 </span>
             </div>
-            <i className={`fas ${tipo==='admin'?'fa-user-shield text-blue-400':'fa-motorcycle text-amber-400'} text-lg`}></i>
+            <button onClick={()=>setConfirmDel(u)}
+                className="w-8 h-8 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg flex items-center justify-center text-red-500 transition-colors flex-shrink-0">
+                <i className="fas fa-trash-alt text-xs"></i>
+            </button>
         </div>
     );
 
@@ -1697,6 +1717,23 @@ const SeccionUsuarios = () => {
                     )}
                 </div>
             </div>
+
+            {/* Modal confirmar eliminar */}
+            {confirmDel && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-xs shadow-2xl p-6 text-center">
+                        <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i className="fas fa-trash-alt text-red-500 text-xl"></i>
+                        </div>
+                        <p className="font-bold text-gray-800 mb-1">¿Eliminar usuario?</p>
+                        <p className="text-gray-500 text-sm mb-5">Se eliminará <strong>{confirmDel.username||confirmDel.Username}</strong>. Esta acción no se puede deshacer.</p>
+                        <div className="flex gap-3">
+                            <button onClick={()=>setConfirmDel(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button>
+                            <button onClick={()=>handleEliminar(confirmDel)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal crear usuario */}
             {showForm && (
