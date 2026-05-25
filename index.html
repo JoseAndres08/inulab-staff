@@ -656,12 +656,10 @@ const MapButton = ({ address, district }) => {
             </button>
             {show && (
                 <div className="absolute left-0 right-0 mt-1 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                    <a href={wazeUrl} target="_blank" rel="noopener noreferrer" onClick={()=>setShow(false)} className="flex items-center gap-3 px-4 py-3 no-underline text-gray-800 active:bg-gray-50 border-b border-gray-100">
-                        <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="28" r="26" fill="#33CCFF"/><ellipse cx="32" cy="28" rx="26" ry="26" fill="#33CCFF"/><path d="M32 6C18.7 6 8 16.7 8 30c0 8.2 4.1 15.4 10.4 19.8l-1.2 5.8 6.3-3.1C25.4 53.5 28.6 54 32 54c13.3 0 24-10.7 24-24S45.3 6 32 6z" fill="#33CCFF"/><path d="M32 8C19.8 8 10 17.8 10 30c0 7.9 4 14.9 10.1 19.1l-1 5 5.8-2.9C26.8 52.4 29.3 53 32 53c12.2 0 22-9.8 22-22S44.2 8 32 8z" fill="#fff"/><circle cx="24" cy="28" r="3.5" fill="#1a1a1a"/><circle cx="40" cy="28" r="3.5" fill="#1a1a1a"/><path d="M24 36 Q32 42 40 36" stroke="#1a1a1a" strokeWidth="2.5" fill="none" strokeLinecap="round"/><circle cx="25.5" cy="26.5" r="1.2" fill="#fff"/><circle cx="41.5" cy="26.5" r="1.2" fill="#fff"/><path d="M44 14 Q50 10 52 16" stroke="#FFCC00" strokeWidth="2.5" fill="none" strokeLinecap="round"/><circle cx="53" cy="17" r="2" fill="#FFCC00"/></svg>
+                    <a href={wazeUrl} target="_blank" rel="noopener noreferrer" onClick={()=>setShow(false)} className="flex items-center px-4 py-3 no-underline text-gray-800 active:bg-gray-50 border-b border-gray-100">
                         <span className="font-semibold text-base">Waze</span>
                     </a>
-                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={()=>setShow(false)} className="flex items-center gap-3 px-4 py-3 no-underline text-gray-800 active:bg-gray-50">
-                        <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M32 2C19.3 2 9 12.3 9 25c0 17.5 23 37 23 37s23-19.5 23-37C55 12.3 44.7 2 32 2z" fill="#EA4335"/><path d="M32 2C19.3 2 9 12.3 9 25c0 4.2 1.1 8.1 3 11.5L32 2z" fill="#FBBC04"/><path d="M32 2l20 34.5C54 33.1 55 29.2 55 25 55 12.3 44.7 2 32 2z" fill="#4285F4"/><path d="M12 36.5C15.8 43.3 23.3 50.9 32 62c8.7-11.1 16.2-18.7 20-25.5L32 2 12 36.5z" fill="#34A853"/><circle cx="32" cy="25" r="9" fill="#fff"/></svg>
+                    <a href={mapsUrl} target="_blank" rel="noopener noreferrer" onClick={()=>setShow(false)} className="flex items-center px-4 py-3 no-underline text-gray-800 active:bg-gray-50">
                         <span className="font-semibold text-base">Google Maps</span>
                     </a>
                 </div>
