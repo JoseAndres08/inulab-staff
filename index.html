@@ -407,7 +407,7 @@ const normalizeOrder = (o) => {
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
             pdfData: fullUrl(it.pdfUrl || it.pdfData) || orderResultPdf,
         })),
-        comment: o.comment || '', documentType: o.documentType || 'boleta',
+        comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
         invoicePdf: fullUrl(o.invoicePdfUrl || o.invoicePdf),
         resultPdf: orderResultPdf,
@@ -726,7 +726,7 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     ];
     const currentIdx = STEPS.findIndex(s => s.id === order.status);
     const item = order.items?.[0];
-    const [labComment, setLabComment] = React.useState(order.comment || '');
+    const [labComment, setLabComment] = React.useState(order.staffComment || '');
     const [saving, setSaving] = React.useState(false);
     const [saved, setSaved] = React.useState(false);
     const [showInstrucciones, setShowInstrucciones] = React.useState(false);
@@ -822,10 +822,19 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
                                     <i className="fas fa-comment text-cyan-600 text-xs"></i>
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-gray-800 text-sm">Comentario</p>
+                                    <p className="font-semibold text-gray-800 text-sm">Comentario del cliente</p>
                                     <p className="text-xs text-gray-500">{order.comment || 'Sin comentarios'}</p>
                                 </div>
                             </div>
+                            {order.staffComment&&<div className="flex items-start gap-3 bg-amber-50 rounded-xl p-3">
+                                <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <i className="fas fa-comment-medical text-amber-600 text-xs"></i>
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-gray-800 text-sm">Instrucciones enviadas</p>
+                                    <p className="text-xs text-gray-500">{order.staffComment}</p>
+                                </div>
+                            </div>}
                             {/* Instrucciones al cliente - expandible dentro del mismo recuadro */}
                             <div className="border-t border-gray-100 pt-3">
                                 {!showInstrucciones ? (
