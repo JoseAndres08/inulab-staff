@@ -202,7 +202,7 @@ const api = {
     updateComment:    (id, comment) => api.call('PUT', `/api/Orders/${id}/comment`, { comment }),
     getPet:           (id)      => api.call('GET', `/api/Pets/${id}`).catch(() => null),
     getUsuarios:      ()        => api.call('GET', '/api/Users/motorizados').catch(() => []),
-    getAdmins:        ()        => api.call('GET', '/api/Users/admins').catch(() => []),
+    getAdmins:        ()        => api.call("GET", "/api/Users/lista-admins").catch(() => []),
     registrar:        (data)    => api.call('POST', '/api/Auth/registrarse', data),
     eliminarUsuario:  (id)      => api.call('DELETE', `/api/Users/${id}`),
 };
