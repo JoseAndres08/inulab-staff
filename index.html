@@ -1420,7 +1420,7 @@ const SeccionCatalogo = () => {
         if (!cambios) return;
         setGuardando(true);
         try {
-            const dtos = Object.entries(editados).map(([id, precio]) => { const ex = catalog.find(e => e.id === id) || { nombre: id, tipo: filtro }; return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio }; });
+            const dtos = Object.entries(editados).map(([id, precio]) => { const ex = catalog.find(e => e.id === id && e.tipo === filtro) || catalog.find(e => e.id === id) || { nombre: id, tipo: filtro }; return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio }; });
             await api.savePrecios(dtos);
             setPrecios(p => ({ ...p, ...editados }));
             setEditados({});
