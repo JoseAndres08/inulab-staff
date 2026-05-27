@@ -414,6 +414,7 @@ const normalizeOrder = (o) => {
         assignedTo: o.motorizadoId || o.assignedTo || null,
         motoName: o.motorizado?.username || o.motoName || null,
         requiresSampling: o.requiresSampling || false,
+        statusHistory: (o.statusHistory || []).map(h => ({ status: typeof h.status === 'number' ? (statusList[h.status] || 'pending') : h.status, changedAt: h.changedAt })),
     };
 };
 
@@ -731,6 +732,13 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     const [saved, setSaved] = React.useState(false);
     const [showInstrucciones, setShowInstrucciones] = React.useState(false);
 
+    const getStepTime = (stepId) => {
+        const h = (order.statusHistory || []).find(h => h.status === stepId);
+        if (!h) return null;
+        const d = new Date(h.changedAt);
+        return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    };
+
     const saveComment = async () => {
         setSaving(true);
         try {
@@ -783,7 +791,7 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
                                                 {step.label}
                                                 {current && <span className="ml-2 inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse align-middle"></span>}
                                             </p>
-                                            <p className={`text-xs ${done?'text-gray-500':'text-gray-300'}`}>{step.desc}</p>
+                                            <p className={`text-xs ${done?'text-gray-500':'text-gray-300'}`}>{done && getStepTime(step.id) ? getStepTime(step.id) : step.desc}</p>
                                         </div>
                                     </div>
                                 );
