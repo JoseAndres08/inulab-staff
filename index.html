@@ -717,15 +717,15 @@ const PhoneButton = ({ userId }) => {
 // ── TRACKING MODAL ───────────────────────────────────────────────────────
 const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     const STEPS = [
-        { id:'pending',            label:'Pedido recibido',       desc:'Tu pedido ha sido registrado',        icon:'fa-clipboard-check' },
-        { id:'assigned',           label:'Pedido confirmado',     desc:'El laboratorio confirmó tu pedido',   icon:'fa-user-check' },
-        { id:'moto_en_camino',     label:'Motorizado en camino',  desc:'El motorizado va hacia tu ubicación', icon:'fa-motorcycle' },
-        { id:'moto_arrived',       label:'Motorizado llegó',      desc:'Por favor entrega la muestra',        icon:'fa-map-marker-alt' },
-        { id:'pickup_in_progress', label:'Muestra recogida',      desc:'Tu muestra va camino al laboratorio', icon:'fa-vial' },
-        { id:'sample_received',    label:'En laboratorio',        desc:'La muestra llegó al laboratorio',     icon:'fa-flask' },
-        { id:'processing',         label:'Procesando muestra',    desc:'Estamos analizando tu muestra',       icon:'fa-cog' },
-        { id:'results_uploaded',   label:'Resultados listos',     desc:'Tus resultados están disponibles',    icon:'fa-file-medical' },
-        { id:'completed',          label:'Completado',            desc:'Proceso finalizado exitosamente',     icon:'fa-check-double' },
+        { id:'pending',            label:'Pedido recibido',       desc:'Pedido registrado en el sistema',         icon:'fa-clipboard-check' },
+        { id:'assigned',           label:'Pedido confirmado',     desc:'Motorizado asignado al pedido',           icon:'fa-user-check' },
+        { id:'moto_en_camino',     label:'Motorizado en camino',  desc:'Motorizado dirigiéndose al cliente',      icon:'fa-motorcycle' },
+        { id:'moto_arrived',       label:'Motorizado llegó',      desc:'Motorizado en ubicación del cliente',     icon:'fa-map-marker-alt' },
+        { id:'pickup_in_progress', label:'Muestra recogida',      desc:'Muestra en camino al laboratorio',        icon:'fa-vial' },
+        { id:'sample_received',    label:'En laboratorio',        desc:'Muestra llegó al laboratorio',            icon:'fa-flask' },
+        { id:'processing',         label:'Procesando muestra',    desc:'Analizando la muestra',                   icon:'fa-cog' },
+        { id:'results_uploaded',   label:'Resultados listos',     desc:'Resultados disponibles para liberar',     icon:'fa-file-medical' },
+        { id:'completed',          label:'Completado',            desc:'Proceso finalizado exitosamente',         icon:'fa-check-double' },
     ];
     const currentIdx = STEPS.findIndex(s => s.id === order.status);
     const item = order.items?.[0];
