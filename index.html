@@ -734,16 +734,9 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
 
     const getStepTime = (stepId) => {
         const h = (order.statusHistory || []).find(h => h.status === stepId);
-        if (h) {
-            const d = new Date(h.changedAt);
-            return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-        }
-        // Fallback: usar createdAt para el paso pending
-        if (stepId === 'pending' && order.date) {
-            const d = new Date(order.date);
-            return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-        }
-        return null;
+        if (!h) return null;
+        const d = new Date(h.changedAt);
+        return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
     };
 
     const saveComment = async () => {
