@@ -798,7 +798,8 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
                                                 {step.label}
                                                 {current && <span className="ml-2 inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse align-middle"></span>}
                                             </p>
-                                            <p className={`text-xs ${done?'text-gray-500':'text-gray-300'}`}>{done && getStepTime(step.id) ? getStepTime(step.id) : step.desc}</p>
+                                            <p className={`text-xs ${done?'text-gray-500':'text-gray-300'}`}>{step.desc}</p>
+                                            {done && getStepTime(step.id) && <p className="text-xs text-cyan-600 font-medium mt-0.5">{getStepTime(step.id)}</p>}
                                         </div>
                                     </div>
                                 );
