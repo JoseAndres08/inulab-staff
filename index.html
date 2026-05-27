@@ -200,6 +200,7 @@ const api = {
     getMotoLocation:  (id)      => api.call('GET', `/api/Orders/${id}/location`).catch(() => null),
     getUser:          (id)      => api.call('GET', `/api/Users/${id}`).catch(() => null),
     updateComment:    (id, comment) => api.call('PUT', `/api/Orders/${id}/comment`, { comment }),
+    updateManual:     (id, isManual) => api.call('PUT', `/api/Orders/${id}/manual`, { isManual }),
     getPet:           (id)      => api.call('GET', `/api/Pets/${id}`).catch(() => null),
     getUsuarios:      ()        => api.call('GET', '/api/Users/motorizados').catch(() => []),
     getAdmins:        ()        => api.call("GET", "/api/Users/lista-admins").catch(() => []),
@@ -414,6 +415,7 @@ const normalizeOrder = (o) => {
         assignedTo: o.motorizadoId || o.assignedTo || null,
         motoName: o.motorizado?.username || o.motoName || null,
         requiresSampling: o.requiresSampling || false,
+        isManual: o.isManual || false,
         statusHistory: (o.statusHistory || []).map(h => ({ status: typeof h.status === 'number' ? (statusList[h.status] || 'pending') : h.status, changedAt: h.changedAt })),
     };
 };
@@ -894,7 +896,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
     const [showAssign, setShowAssign] = useState(false);
     const [showPdf, setShowPdf] = useState(null);
     const [showTracking, setShowTracking] = useState(false);
-    const [manualMode, setManualMode] = useState(false);
+    const [manualMode, setManualMode] = useState(order.isManual || false);
     const si = getStatusInfo(order.status);
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 transition-all" style={highlight?{animation:'highlightFlash 1.4s ease-in-out'}:{}}>
@@ -913,7 +915,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     </span>
                     {/* Botón manual por tarjeta */}
                     {order.status !== 'completed' && (
-                        <button onClick={()=>setManualMode(m=>!m)}
+                        <button onClick={async()=>{ const next=!manualMode; setManualMode(next); try{ await api.updateManual(order.id, next); }catch(e){ setManualMode(!next); } }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm ${manualMode?'bg-red-500 text-white hover:bg-red-600':'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                             {manualMode?'Manual':'Auto'}
                         </button>
@@ -1685,8 +1687,9 @@ const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, set
                                     ))}
                                 </div>
 
-                                {/* Botón acción principal */}
-                                {nextMap[order.status]&&<button
+                                {/* Botón acción principal — solo si no es manual */}
+                                {order.isManual&&<div className="w-full bg-amber-50 border border-amber-200 text-amber-700 py-3 px-4 rounded-2xl text-sm font-semibold text-center"><i className="fas fa-info-circle mr-2"></i>El staff está manejando este pedido</div>}
+                                {nextMap[order.status]&&!order.isManual&&<button
                                     onClick={async()=>{await onStatusChange(order.id,nextMap[order.status]);setSuccess('✅ Estado actualizado');setTimeout(()=>setSuccess(''),3000);}}
                                     className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 active:from-cyan-700 active:to-blue-800 text-white py-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl transition-all select-none">
                                     {nextLabel[order.status]}
