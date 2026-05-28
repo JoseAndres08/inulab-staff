@@ -421,7 +421,10 @@ const normalizeOrder = (o) => {
 };
 
 const getPetFullName = (pet) => {
-    if (!pet?.owner) return pet?.name || '';
+    if (!pet) return '';
+    const lastName = pet.lastName || pet.LastName || '';
+    if (lastName) return `${pet.name} ${lastName}`;
+    if (!pet.owner) return pet.name || '';
     const parts = pet.owner.trim().split(' ');
     const last = parts.length > 1 ? parts.slice(1).join(' ') : '';
     return last ? `${pet.name} ${last}` : pet.name;
