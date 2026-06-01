@@ -483,7 +483,7 @@ const TrackingMap = ({ order, phase }) => {
 };
 
 // ── PDF VIEWER (página completa, igual al cliente) ────────────────────────
-const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clientName, examName, onClose }) => {
+const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clientName, examName, petName, onClose }) => {
     const [blobUrl, setBlobUrl] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(false);
@@ -523,11 +523,13 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
         }
         const nombre = clientName || subtitle || '';
         const examen = examName || title || '';
+        const mascota = petName || '';
         const esFactura = isInvoice;
         const asunto = esFactura ? 'Facturación de examen - Inulaboratorios' : 'Resultado de examen - Inulaboratorios';
+        const mascotaLinea = mascota ? `\nPaciente: ${mascota}` : '';
         const cuerpo = esFactura
-            ? `Estimado/a ${nombre},\n\nLe adjuntamos el comprobante de pago por el servicio de ${examen} realizado en Inulaboratorios.\n\nGracias por su confianza.\n\nAtentamente,\nInulaboratorios S.A.C.`
-            : `Estimado/a ${nombre},\n\nLe adjuntamos el resultado de su examen ${examen} realizado en Inulaboratorios.\n\nAnte cualquier consulta, comuníquese con nosotros.\n\nAtentamente,\nInulaboratorios S.A.C.`;
+            ? `Estimado/a ${nombre},\n\nLe adjuntamos el comprobante de pago por el servicio de ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nGracias por su confianza.\n\nAtentamente,\nINULABORATORIOS S.A.C.`
+            : `Estimado/a ${nombre},\n\nLe adjuntamos el resultado de su examen ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nAnte cualquier consulta, comuníquese con nosotros.\n\nAtentamente,\nINULABORATORIOS S.A.C.`;
         const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
         window.open(gmailUrl, '_blank');
         setSendMsg(email ? `✅ PDF descargado — Gmail abierto para ${email}` : '✅ PDF descargado — Gmail abierto (adjunta el PDF)');
@@ -601,10 +603,10 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
 
 
 // ── PDF MODAL (alias para compatibilidad - renderiza dentro del layout) ──────
-const PdfModal = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clientName, examName, onClose }) => {
+const PdfModal = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clientName, examName, petName, onClose }) => {
     return (
         <div className="absolute inset-0 bg-white z-50 flex flex-col">
-            <PdfViewer title={title} subtitle={subtitle} icon={icon} pdfUrl={pdfUrl} date={date} orderId={orderId} userId={userId} clientName={clientName} examName={examName} onClose={onClose}/>
+            <PdfViewer title={title} subtitle={subtitle} icon={icon} pdfUrl={pdfUrl} date={date} orderId={orderId} userId={userId} clientName={clientName} examName={examName} petName={petName} onClose={onClose}/>
         </div>
     );
 };
@@ -983,7 +985,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                             <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p>
                             <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
                         </div>
-                        {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
+                        {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
                     </div>
                 ))}
             </div>
@@ -1016,7 +1018,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
             {showUpload&&<UploadResultsModal order={order} onClose={()=>setShowUpload(false)} onSuccess={onSuccess}/>}
             {showInvoice&&<InvoiceModal order={order} onClose={()=>setShowInvoice(false)} onSuccess={onSuccess}/>}
             {showAssign&&<AssignModal order={order} onClose={()=>setShowAssign(false)} onAssign={onSuccess}/>}
-            {showPdf&&<PdfModal title={showPdf.title} subtitle={showPdf.sub} icon={showPdf.icon||'fa-file-pdf'} pdfUrl={showPdf.url} orderId={showPdf.id} userId={showPdf.userId} clientName={showPdf.clientName} examName={showPdf.examName} onClose={()=>setShowPdf(null)}/>}
+            {showPdf&&<PdfModal title={showPdf.title} subtitle={showPdf.sub} icon={showPdf.icon||'fa-file-pdf'} pdfUrl={showPdf.url} orderId={showPdf.id} userId={showPdf.userId} clientName={showPdf.clientName} examName={showPdf.examName} petName={showPdf.petName} onClose={()=>setShowPdf(null)}/>}
             {showTracking&&<TrackingModal order={order} onClose={()=>setShowTracking(false)}/>}
         </div>
     );
@@ -1050,13 +1052,13 @@ const SeccionInicio = ({ orders, user, onGoTo }) => {
             </div>
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟣 Último resultado</h2><button onClick={()=>onGoTo('resultados')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
-                {!lastResultOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-file-medical text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay resultados aún</p></div>):(() => {const item=lastResultOrder.items.find(it=>it.pdfData)||lastResultOrder.items[0];return(<div onClick={()=>item.pdfData&&setSelPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)+' · '+lastResultOrder.userName,id:lastResultOrder.id,userId:lastResultOrder.userId,clientName:lastResultOrder.userName,examName:item.exam?.name})} className={`bg-white rounded-xl p-4 border border-gray-200 ${item.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="flex items-center gap-3"><PetPhoto photo={item.pet?.photo} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{getPetFullName(item.pet)} <span className="text-gray-600 font-normal">· {lastResultOrder.userName}</span></p><p className="text-gray-600 text-xs truncate mt-0.5">{item.exam?.name}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastResultOrder.completedAt||lastResultOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{item.pdfData&&<div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div>}</div></div>);})()}
+                {!lastResultOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-file-medical text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay resultados aún</p></div>):(() => {const item=lastResultOrder.items.find(it=>it.pdfData)||lastResultOrder.items[0];return(<div onClick={()=>item.pdfData&&setSelPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)+' · '+lastResultOrder.userName,id:lastResultOrder.id,userId:lastResultOrder.userId,clientName:lastResultOrder.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className={`bg-white rounded-xl p-4 border border-gray-200 ${item.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="flex items-center gap-3"><PetPhoto photo={item.pet?.photo} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{getPetFullName(item.pet)} <span className="text-gray-600 font-normal">· {lastResultOrder.userName}</span></p><p className="text-gray-600 text-xs truncate mt-0.5">{item.exam?.name}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastResultOrder.completedAt||lastResultOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{item.pdfData&&<div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div>}</div></div>);})()}
             </div>
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟡 Último comprobante</h2><button onClick={()=>onGoTo('facturacion')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
-                {!lastInvoiceOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay comprobantes aún</p></div>):(<div onClick={()=>setSelPdf({url:lastInvoiceOrder.invoicePdf,title:lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura',sub:lastInvoiceOrder.userName,icon:lastInvoiceOrder.documentType==='boleta'?'fa-receipt':'fa-file-invoice-dollar',id:lastInvoiceOrder.id,userId:lastInvoiceOrder.userId,clientName:lastInvoiceOrder.userName,examName:lastInvoiceOrder.items?.[0]?.exam?.name||''})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${lastInvoiceOrder.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${lastInvoiceOrder.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'}`}></i></div><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura'} <span className="text-gray-600 font-normal">· {lastInvoiceOrder.items?.[0]?.exam?.name||''}</span></p><p className="text-gray-600 text-xs mt-0.5">{getPetFullName(lastInvoiceOrder.items?.[0]?.pet)} · {lastInvoiceOrder.userName}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastInvoiceOrder.completedAt||lastInvoiceOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div><i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i></div></div>)}
+                {!lastInvoiceOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay comprobantes aún</p></div>):(<div onClick={()=>setSelPdf({url:lastInvoiceOrder.invoicePdf,title:lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura',sub:lastInvoiceOrder.userName,icon:lastInvoiceOrder.documentType==='boleta'?'fa-receipt':'fa-file-invoice-dollar',id:lastInvoiceOrder.id,userId:lastInvoiceOrder.userId,clientName:lastInvoiceOrder.userName,examName:lastInvoiceOrder.items?.[0]?.exam?.name||'',petName:getPetFullName(lastInvoiceOrder.items?.[0]?.pet)})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${lastInvoiceOrder.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${lastInvoiceOrder.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'}`}></i></div><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura'} <span className="text-gray-600 font-normal">· {lastInvoiceOrder.items?.[0]?.exam?.name||''}</span></p><p className="text-gray-600 text-xs mt-0.5">{getPetFullName(lastInvoiceOrder.items?.[0]?.pet)} · {lastInvoiceOrder.userName}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastInvoiceOrder.completedAt||lastInvoiceOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div><i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i></div></div>)}
             </div>
-            {selPdf&&<PdfModal title={selPdf.title} subtitle={selPdf.sub} icon={selPdf.icon||'fa-file-pdf'} pdfUrl={selPdf.url} orderId={selPdf.id} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} onClose={()=>setSelPdf(null)}/>}
+            {selPdf&&<PdfModal title={selPdf.title} subtitle={selPdf.sub} icon={selPdf.icon||'fa-file-pdf'} pdfUrl={selPdf.url} orderId={selPdf.id} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} petName={selPdf.petName} onClose={()=>setSelPdf(null)}/>}
         </div>
         </div>
     );
@@ -1130,7 +1132,7 @@ const SeccionPacientes = ({ orders }) => {
         return true;
     });
 
-    if (selExam) return <PdfModal title={selExam.type} subtitle={selExam.petName} icon="fa-file-pdf" pdfUrl={selExam.pdfData} orderId={selExam.orderId} userId={selExam.userId} clientName={selExam.clientName} examName={selExam.type} onClose={()=>setSelExam(null)}/>;
+    if (selExam) return <PdfModal title={selExam.type} subtitle={selExam.petName} icon="fa-file-pdf" pdfUrl={selExam.pdfData} orderId={selExam.orderId} userId={selExam.userId} clientName={selExam.clientName} examName={selExam.type} petName={selExam.petName} onClose={()=>setSelExam(null)}/>;
 
     if (selPet) {
         const petOrders = orders.filter(o => o.items.some(it => {
@@ -1356,7 +1358,7 @@ const SeccionResultados = ({ orders }) => {
                     </div>
                 )}
             </div>
-            {selPdf&&<PdfModal title={selPdf.examName} subtitle={`${selPdf.petName} · ${selPdf.clientName}`} icon="fa-file-pdf" pdfUrl={selPdf.pdfData} date={selPdf.date} orderId={selPdf.orderId} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} onClose={()=>setSelPdf(null)}/>}
+            {selPdf&&<PdfModal title={selPdf.examName} subtitle={`${selPdf.petName} · ${selPdf.clientName}`} icon="fa-file-pdf" pdfUrl={selPdf.pdfData} date={selPdf.date} orderId={selPdf.orderId} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} petName={selPdf.petName} onClose={()=>setSelPdf(null)}/>}
         </div>
     );
 };
@@ -1430,7 +1432,7 @@ const SeccionFacturacion = ({ orders }) => {
             <div className="flex-1 overflow-y-auto p-4 hide-scrollbar">
                 {filtered.length===0?(<div className="text-center py-12"><i className="fas fa-receipt text-4xl mb-2 block text-gray-300"></i><p className="text-gray-600">Sin comprobantes</p></div>):(
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">
-                        {filtered.map(o=>(<div key={o.id} onClick={()=>setSelPdf({url:o.invoicePdf,type:o.documentType,client:o.userName,date:o.completedAt||o.date,id:o.id,userId:o.userId,clientName:o.userName,examName:o.items?.[0]?.exam?.name||''})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all">
+                        {filtered.map(o=>(<div key={o.id} onClick={()=>setSelPdf({url:o.invoicePdf,type:o.documentType,client:o.userName,date:o.completedAt||o.date,id:o.id,userId:o.userId,clientName:o.userName,examName:o.items?.[0]?.exam?.name||'',petName:getPetFullName(o.items?.[0]?.pet)})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all">
                             <div className="flex items-center gap-3">
                                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${o.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${o.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} text-lg`}></i></div>
                                 <div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{o.userName}</p><p className="text-gray-600 text-xs">{o.documentType==='boleta'?'Boleta':'Factura'}</p><p className="text-gray-500 text-xs">{new Date(o.completedAt||o.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'})}</p></div>
@@ -1440,7 +1442,7 @@ const SeccionFacturacion = ({ orders }) => {
                     </div>
                 )}
             </div>
-            {selPdf&&<PdfModal title={selPdf.type==='boleta'?'Boleta':'Factura'} subtitle={selPdf.client} icon={selPdf.type==='boleta'?'fa-receipt':'fa-file-invoice-dollar'} pdfUrl={selPdf.url} date={selPdf.date} orderId={selPdf.id} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} onClose={()=>setSelPdf(null)}/>}
+            {selPdf&&<PdfModal title={selPdf.type==='boleta'?'Boleta':'Factura'} subtitle={selPdf.client} icon={selPdf.type==='boleta'?'fa-receipt':'fa-file-invoice-dollar'} pdfUrl={selPdf.url} date={selPdf.date} orderId={selPdf.id} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} petName={selPdf.petName} onClose={()=>setSelPdf(null)}/>}
         </div>
     );
 };
