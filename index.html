@@ -536,7 +536,9 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
             : `Estimado/a ${nombre},\n\nLe adjuntamos el resultado de su examen ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nAnte cualquier consulta, comuníquese con nosotros.\n\nAtentamente,\nINULABORATORIOS S.A.C.`;
         // Detectar plataforma para abrir la app NATIVA de Gmail en móvil (no el navegador)
         const ua = navigator.userAgent || navigator.vendor || '';
-        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        // iPadOS (Safari) se hace pasar por Mac de escritorio: se reconoce por la pantalla táctil (las Mac no tienen touch)
+        const isIPadOS = /Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1;
+        const isIOS = (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) || isIPadOS;
         const isAndroid = /Android/i.test(ua);
         const to = encodeURIComponent(email);
         const su = encodeURIComponent(asunto);
