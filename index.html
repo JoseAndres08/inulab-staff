@@ -405,7 +405,7 @@ const normalizeOrder = (o) => {
         status, date: o.createdAt || o.date, completedAt: o.completedAt,
         items: (o.items || []).map(it => ({
             exam: { id: it.examId || it.exam?.id, name: it.examName || it.exam?.name || 'Examen' },
-            pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '' },
+            pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '', lastName: it.petLastName || it.pet?.lastName || '' },
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
             pdfData: fullUrl(it.pdfUrl || it.pdfData) || orderResultPdf,
         })),
@@ -425,9 +425,8 @@ const getPetFullName = (pet) => {
     if (!pet) return '';
     const lastName = pet.lastName || pet.LastName || '';
     if (lastName) return `${pet.name} ${lastName}`;
-    const ownerStr = pet.owner || pet.ownerClient || '';
-    if (!ownerStr) return pet.name || '';
-    const parts = ownerStr.trim().split(' ');
+    if (!pet.owner) return pet.name || '';
+    const parts = pet.owner.trim().split(' ');
     const last = parts.length > 1 ? parts.slice(1).join(' ') : '';
     return last ? `${pet.name} ${last}` : pet.name;
 };
@@ -1214,7 +1213,7 @@ const SeccionPacientes = ({ orders }) => {
                                 <div className="flex items-center gap-4">
                                     <PetPhoto photo={p.photo} size="xl"/>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-gray-800 font-bold text-base truncate">{getPetFullName(p)}</p>
+                                        <p className="text-gray-800 font-bold text-base truncate">{p.name}</p>
                                         <p className="text-gray-500 text-sm truncate">Cliente: {p.owner||p.ownerClient}</p>
                                     </div>
                                     <i className="fas fa-chevron-right text-gray-300 text-sm flex-shrink-0"></i>
