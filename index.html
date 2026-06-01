@@ -525,7 +525,11 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
         const examen = examName || title || '';
         const mascota = petName || '';
         const esFactura = isInvoice;
-        const asunto = esFactura ? 'Facturación de examen - Inulaboratorios' : 'Resultado de examen - Inulaboratorios';
+        const detalle = [examen, mascota].filter(Boolean).join(', ');
+        const prefijo = esFactura ? 'Facturación de' : 'Resultado de';
+        const asunto = detalle
+            ? `${prefijo} ${detalle} - INULABORATORIOS`
+            : `${prefijo} examen - INULABORATORIOS`;
         const mascotaLinea = mascota ? `\nPaciente: ${mascota}` : '';
         const cuerpo = esFactura
             ? `Estimado/a ${nombre},\n\nLe adjuntamos el comprobante de pago por el servicio de ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nGracias por su confianza.\n\nAtentamente,\nINULABORATORIOS S.A.C.`
