@@ -534,8 +534,34 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
         const cuerpo = esFactura
             ? `Estimado/a ${nombre},\n\nLe adjuntamos el comprobante de pago por el servicio de ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nGracias por su confianza.\n\nAtentamente,\nINULABORATORIOS S.A.C.`
             : `Estimado/a ${nombre},\n\nLe adjuntamos el resultado de su examen ${examen}${mascotaLinea} realizado en Inulaboratorios.\n\nAnte cualquier consulta, comuníquese con nosotros.\n\nAtentamente,\nINULABORATORIOS S.A.C.`;
-        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-        window.open(gmailUrl, '_blank');
+        // Detectar plataforma para abrir la app NATIVA de Gmail en móvil (no el navegador)
+        const ua = navigator.userAgent || navigator.vendor || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const isAndroid = /Android/i.test(ua);
+        const to = encodeURIComponent(email);
+        const su = encodeURIComponent(asunto);
+        const bd = encodeURIComponent(cuerpo);
+
+        if (isIOS) {
+            // iPhone/iPad: esquema propio de la app de Gmail. Si Gmail no está instalado, cae a la app de correo por defecto.
+            const gmailApp = `googlegmail:///co?to=${to}&subject=${su}&body=${bd}`;
+            const mailtoUrl = `mailto:${email}?subject=${su}&body=${bd}`;
+            let abrioApp = false;
+            const onHide = () => { abrioApp = true; };
+            document.addEventListener('visibilitychange', onHide, { once: true });
+            window.location.href = gmailApp;
+            setTimeout(() => {
+                document.removeEventListener('visibilitychange', onHide);
+                if (!abrioApp && !document.hidden) window.location.href = mailtoUrl;
+            }, 1200);
+        } else if (isAndroid) {
+            // Android: mailto abre la app NATIVA de correo (Gmail en la gran mayoría de equipos).
+            window.location.href = `mailto:${email}?subject=${su}&body=${bd}`;
+        } else {
+            // Escritorio: Gmail web en una pestaña nueva.
+            window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bd}`, '_blank');
+        }
+
         setSendMsg(email ? `✅ PDF descargado — Gmail abierto para ${email}` : '✅ PDF descargado — Gmail abierto (adjunta el PDF)');
         setTimeout(() => setSendMsg(''), 6000);
     };
