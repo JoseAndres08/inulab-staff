@@ -829,7 +829,7 @@ const WhatsAppButton = ({ userId }) => {
         if (tel.length === 9) tel = '51' + tel;
         else if (tel.startsWith('0051')) tel = tel.slice(2);
         else if (tel.startsWith('+')) tel = tel.slice(1);
-        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(MENSAJE_TOMA_MUESTRA)}`, '_blank');
+        window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(MENSAJE_TOMA_MUESTRA)}`, '_blank');
     };
 
     return (
