@@ -801,6 +801,43 @@ const PhoneButton = ({ userId }) => {
     );
 };
 
+const MENSAJE_TOMA_MUESTRA = `Hola! Te escribimos para la coordinacion y cotizacion de tu solicitud de toma de muestra a domicilio
+
+📌 Condiciones del servicio – Toma de muestra a domicilio
+Para confirmar la programación de la toma de muestra a domicilio, te compartimos las condiciones del servicio:
+▫️ Reserva: adelanto del 30%.
+▫️ Reprogramación: el adelanto no es reembolsable, pero permite 1 reprogramación con un mínimo de 6 horas de anticipación, sujeta a disponibilidad.
+▫️ Tolerancia: 15 minutos en el domicilio. En caso de no obtener respuesta, dirección incorrecta o imposibilidad de acceso dentro de ese tiempo, la visita se considerará efectuada.
+▫️ Servicio a domicilio: el costo puede variar según el distrito o zona de atención.
+▫️ Resultados: se envían una vez realizado el pago del 100% del servicio.
+👉 Por favor, confírmanos respondiendo "Acepto" para continuar con la programación.`;
+
+const WhatsAppButton = ({ userId }) => {
+    const [loading, setLoading] = React.useState(false);
+
+    const handleWA = async () => {
+        setLoading(true);
+        let phone = null;
+        try {
+            const u = await api.getUser(userId);
+            phone = u?.phone || u?.phoneNumber || u?.telefono || null;
+        } catch {}
+        setLoading(false);
+        if (!phone) { alert('Este cliente no tiene teléfono registrado'); return; }
+        let tel = String(phone).replace(/\D/g, '');
+        if (tel.length === 9) tel = '51' + tel;
+        else if (tel.startsWith('0051')) tel = tel.slice(2);
+        else if (tel.startsWith('+')) tel = tel.slice(1);
+        window.open(`https://wa.me/${tel}?text=${encodeURIComponent(MENSAJE_TOMA_MUESTRA)}`, '_blank');
+    };
+
+    return (
+        <button onClick={handleWA} className="w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center transition-colors" title="WhatsApp - Toma de muestra">
+            {loading ? <i className="fas fa-spinner fa-spin text-xs"></i> : <i className="fab fa-whatsapp text-sm"></i>}
+        </button>
+    );
+};
+
 // ── TRACKING MODAL ───────────────────────────────────────────────────────
 const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     const STEPS = [
@@ -1017,14 +1054,18 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                             <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p>
                             <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
                         </div>
+                        {item.tomaMuestra&&<span className="flex-shrink-0 text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg px-2 py-1 font-medium"><i className="fas fa-syringe mr-1"></i>Toma solicitada</span>}
                         {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
                     </div>
                 ))}
             </div>
             {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
             {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
-            {order.requiresSampling
-                ? <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Necesita toma de muestra a domicilio</p>
+            {order.items?.some(it=>it.tomaMuestra)
+                ? <div className="flex items-center gap-2 mb-2">
+                    <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Toma de muestra solicitada</p>
+                    <WhatsAppButton userId={order.userId}/>
+                  </div>
                 : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Ya tiene la muestra</p>
             }
             {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
