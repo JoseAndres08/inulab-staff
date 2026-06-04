@@ -165,8 +165,7 @@
 
 const { useState, useEffect, useRef } = React;
 
-const API_HOST = 'https://inulab-backend-production-99d1.up.railway.app';
-const API_BASE = API_HOST;
+const API_BASE = 'https://inulab-backend-production-99d1.up.railway.app';
 
 const api = {
     token: () => localStorage.getItem('inulab_token'),
@@ -398,7 +397,7 @@ const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f
 const normalizeOrder = (o) => {
     const statusList = ['pending','assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received','arrived_at_lab','processing','results_uploaded','completed'];
     const status = typeof o.status === 'number' ? (statusList[o.status] || 'pending') : (o.status || 'pending');
-    const fullUrl = (url) => { if (!url) return null; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_HOST + url; };
+    const fullUrl = (url) => { if (!url) return null; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; };
     const orderResultPdf = fullUrl(o.resultPdfUrl || o.ResultPdfUrl);
     return {
         id: o.id,
@@ -442,7 +441,7 @@ const PetPhoto = ({ photo, size = 'md' }) => {
     if (!photo || imgErr) return <span className={`${cls} flex items-center justify-center leading-none flex-shrink-0`}>🐾</span>;
     const isImg = photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('data:') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(photo);
     if (isImg) {
-        const src = (photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('data:')) ? photo : `${API_HOST}/uploads/${photo}`;
+        const src = (photo.startsWith('http') || photo.startsWith('/') || photo.startsWith('data:')) ? photo : `${API_BASE}/uploads/${photo}`;
         return <img src={src} className={`${cls} rounded-full object-cover flex-shrink-0`} onError={() => setImgErr(true)} />;
     }
     return <span className={`${cls} flex items-center justify-center leading-none flex-shrink-0`}>{photo}</span>;
@@ -1547,10 +1546,19 @@ const SeccionCatalogo = () => {
                 { id: 'X' + Date.now(), nombre, categoria, tipo: form.tipo, precio: Number(form.precio) },
               ];
 
-        for (const newEx of nuevos) {
-            try { const created = await api.createExamen(newEx); setCatalog(prev => [...prev, created.id ? created : newEx]); }
-            catch { setCatalog(prev => [...prev, newEx]); }
-        }
+        const dtos = nuevos.map(ex => ({
+            examenId: ex.id,
+            nombre: ex.nombre,
+            tipoUsuario: ex.tipo,
+            precio: ex.precio,
+            categoria: ex.categoria,
+            especie: 'ambos',
+            requiereTomaMuestra: true,
+            tiempoEntrega: '',
+            descripcion: '',
+        }));
+        try { await api.savePrecios(dtos); } catch {}
+        setCatalog(prev => [...prev, ...nuevos]);
 
         setShowForm(false); setForm({ nombre:'', categoria:'', tipo:'medico', precio:'', precioVet:'', precioDueno:'' });
         setMsg('✅ Examen agregado'); setSaving(false);
