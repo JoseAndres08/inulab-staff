@@ -1066,7 +1066,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 inline-flex items-center gap-1"><i className="fas fa-syringe mr-1"></i>Toma de muestra solicitada</p>
                     <WhatsAppButton userId={order.userId}/>
                   </div>
-                : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Ya tiene la muestra</p>
+                : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Para Recojo</p>
             }
             {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
             <div className="flex items-center justify-between gap-2 mt-2">
