@@ -410,6 +410,7 @@ const normalizeOrder = (o) => {
             pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '', lastName: it.petLastName || it.pet?.lastName || '' },
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
             pdfData: fullUrl(it.pdfUrl || it.pdfData) || orderResultPdf,
+            tomaMuestra: it.tomaMuestra || it.TomaMuestra || false,
         })),
         comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
