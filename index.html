@@ -6,21 +6,32 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>INULABORATORIOS - Panel Staff</title>
+    <meta name="description" content="Panel de gestión staff - Inulaboratorios">
+    <meta http-equiv="Cache-Control" content="max-age=3600">
+    <meta name="theme-color" content="#0891b2">
     <!-- Preconnect para CDNs críticos -->
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Preload recursos críticos -->
+    <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin>
+    <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" as="style">
+    <!-- Scripts críticos -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <!-- CSS no bloqueante -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></noscript>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         * { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         /* Prevenir bounce/rubber-band en iOS */
         html {
@@ -166,7 +177,16 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div id="splash" style="position:fixed;inset:0;background:#f0f9ff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:sans-serif;">
+            <img src="logo_inulaboratorios.jpg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:16px;" onerror="this.style.display='none'">
+            <div style="color:#0891b2;font-size:18px;font-weight:600;margin-bottom:8px;">INULABORATORIOS</div>
+            <div style="width:40px;height:4px;background:#e0f2fe;border-radius:2px;overflow:hidden;">
+                <div style="width:40px;height:4px;background:#0891b2;border-radius:2px;animation:ld 1s ease-in-out infinite alternate;"></div>
+            </div>
+            <style>@keyframes ld{from{transform:translateX(-100%)}to{transform:translateX(100%)}}</style>
+        </div>
+    </div>
     <script type="text/babel">
 
 const { useState, useEffect, useRef } = React;
@@ -2282,6 +2302,11 @@ const App = () => {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
+// Ocultar splash cuando React termina de montar
+requestAnimationFrame(() => {
+    const splash = document.getElementById('splash');
+    if (splash) { splash.style.transition = 'opacity 0.3s'; splash.style.opacity = '0'; setTimeout(() => splash.remove(), 300); }
+});
     
     </script>
 </body>
