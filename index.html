@@ -450,6 +450,16 @@ const getPetFullName = (pet) => {
     return last ? `${pet.name} ${last}` : pet.name;
 };
 
+const limaDate = (v) => {
+    if (!v) return new Date(NaN);
+    let d = new Date(v);
+    if (isNaN(d.getTime())) return d;
+    if (typeof v === 'string' && !v.endsWith('Z') && !v.includes('+') && !v.includes('-', 10)) {
+        d = new Date(d.getTime() - 5 * 60 * 60 * 1000);
+    }
+    return d;
+};
+
 const PetPhoto = ({ photo, size = 'md' }) => {
     const sizeMap = { sm: 'w-6 h-6 text-base', md: 'w-8 h-8 text-xl', lg: 'w-10 h-10 text-2xl', xl: 'w-12 h-12 text-3xl' };
     const cls = sizeMap[size] || sizeMap.md;
@@ -605,7 +615,7 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
                     {/* Info */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
                         <h2 className="text-xl font-bold text-gray-800 mb-1">{title}</h2>
-                        {date && <p className="text-sm text-gray-500 mb-0.5 flex items-center gap-1"><i className="fas fa-calendar text-xs"></i>{new Date(date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>}
+                        {date && <p className="text-sm text-gray-500 mb-0.5 flex items-center gap-1"><i className="fas fa-calendar text-xs"></i>{limaDate(date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>}
                         {subtitle && <p className="text-sm text-gray-500 flex items-center gap-1"><i className="fas fa-user text-xs"></i>{subtitle}</p>}
                     </div>
                     {/* PDF */}
@@ -877,7 +887,7 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     const getStepTime = (stepId) => {
         const h = (order.statusHistory || []).find(h => h.status === stepId);
         if (!h) return null;
-        const d = new Date(h.changedAt);
+        const d = limaDate(h.changedAt);
         return d.toLocaleString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
     };
 
@@ -1046,7 +1056,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                         <span className="text-gray-800 font-bold">{order.userName}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${order.userType==='medico'?'bg-emerald-100 text-emerald-700':'bg-blue-100 text-blue-700'}`}>{order.userType==='medico'?'Clínica':'Cliente'}</span>
                     </div>
-                    <p className="text-gray-500 text-xs">{new Date(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
+                    <p className="text-gray-500 text-xs">{limaDate(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
                     {order.motoName&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
@@ -1141,11 +1151,11 @@ const SeccionInicio = ({ orders, user, onGoTo }) => {
             </div>
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟣 Último resultado</h2><button onClick={()=>onGoTo('resultados')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
-                {!lastResultOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-file-medical text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay resultados aún</p></div>):(() => {const item=lastResultOrder.items.find(it=>it.pdfData)||lastResultOrder.items[0];return(<div onClick={()=>item.pdfData&&setSelPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)+' · '+lastResultOrder.userName,id:lastResultOrder.id,userId:lastResultOrder.userId,clientName:lastResultOrder.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className={`bg-white rounded-xl p-4 border border-gray-200 ${item.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="flex items-center gap-3"><PetPhoto photo={item.pet?.photo} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{getPetFullName(item.pet)} <span className="text-gray-600 font-normal">· {lastResultOrder.userName}</span></p><p className="text-gray-600 text-xs truncate mt-0.5">{item.exam?.name}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastResultOrder.completedAt||lastResultOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{item.pdfData&&<div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div>}</div></div>);})()}
+                {!lastResultOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-file-medical text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay resultados aún</p></div>):(() => {const item=lastResultOrder.items.find(it=>it.pdfData)||lastResultOrder.items[0];return(<div onClick={()=>item.pdfData&&setSelPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet)+' · '+lastResultOrder.userName,id:lastResultOrder.id,userId:lastResultOrder.userId,clientName:lastResultOrder.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className={`bg-white rounded-xl p-4 border border-gray-200 ${item.pdfData?'cursor-pointer hover:border-purple-400 hover:shadow-md':''} transition-all`}><div className="flex items-center gap-3"><PetPhoto photo={item.pet?.photo} size="lg"/><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{getPetFullName(item.pet)} <span className="text-gray-600 font-normal">· {lastResultOrder.userName}</span></p><p className="text-gray-600 text-xs truncate mt-0.5">{item.exam?.name}</p><p className="text-gray-500 text-xs mt-0.5">{limaDate(lastResultOrder.completedAt||lastResultOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div>{item.pdfData&&<div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-eye text-purple-600 text-sm"></i></div>}</div></div>);})()}
             </div>
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-3"><h2 className="text-base font-bold text-gray-800 flex items-center gap-2">🟡 Último comprobante</h2><button onClick={()=>onGoTo('facturacion')} className="text-cyan-600 text-sm hover:text-cyan-700 font-medium">Ver todos →</button></div>
-                {!lastInvoiceOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay comprobantes aún</p></div>):(<div onClick={()=>setSelPdf({url:lastInvoiceOrder.invoicePdf,title:lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura',sub:lastInvoiceOrder.userName,icon:lastInvoiceOrder.documentType==='boleta'?'fa-receipt':'fa-file-invoice-dollar',id:lastInvoiceOrder.id,userId:lastInvoiceOrder.userId,clientName:lastInvoiceOrder.userName,examName:lastInvoiceOrder.items?.[0]?.exam?.name||'',petName:getPetFullName(lastInvoiceOrder.items?.[0]?.pet)})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${lastInvoiceOrder.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${lastInvoiceOrder.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'}`}></i></div><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura'} <span className="text-gray-600 font-normal">· {lastInvoiceOrder.items?.[0]?.exam?.name||''}</span></p><p className="text-gray-600 text-xs mt-0.5">{getPetFullName(lastInvoiceOrder.items?.[0]?.pet)} · {lastInvoiceOrder.userName}</p><p className="text-gray-500 text-xs mt-0.5">{new Date(lastInvoiceOrder.completedAt||lastInvoiceOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div><i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i></div></div>)}
+                {!lastInvoiceOrder?(<div className="bg-white rounded-xl p-8 text-center border border-gray-200"><i className="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i><p className="text-gray-600 text-sm">No hay comprobantes aún</p></div>):(<div onClick={()=>setSelPdf({url:lastInvoiceOrder.invoicePdf,title:lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura',sub:lastInvoiceOrder.userName,icon:lastInvoiceOrder.documentType==='boleta'?'fa-receipt':'fa-file-invoice-dollar',id:lastInvoiceOrder.id,userId:lastInvoiceOrder.userId,clientName:lastInvoiceOrder.userName,examName:lastInvoiceOrder.items?.[0]?.exam?.name||'',petName:getPetFullName(lastInvoiceOrder.items?.[0]?.pet)})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${lastInvoiceOrder.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${lastInvoiceOrder.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'}`}></i></div><div className="flex-1 min-w-0"><p className="text-gray-800 font-semibold text-sm">{lastInvoiceOrder.documentType==='boleta'?'Boleta':'Factura'} <span className="text-gray-600 font-normal">· {lastInvoiceOrder.items?.[0]?.exam?.name||''}</span></p><p className="text-gray-600 text-xs mt-0.5">{getPetFullName(lastInvoiceOrder.items?.[0]?.pet)} · {lastInvoiceOrder.userName}</p><p className="text-gray-500 text-xs mt-0.5">{limaDate(lastInvoiceOrder.completedAt||lastInvoiceOrder.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p></div><i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i></div></div>)}
             </div>
             {selPdf&&<PdfModal title={selPdf.title} subtitle={selPdf.sub} icon={selPdf.icon||'fa-file-pdf'} pdfUrl={selPdf.url} orderId={selPdf.id} userId={selPdf.userId} clientName={selPdf.clientName} examName={selPdf.examName} petName={selPdf.petName} onClose={()=>setSelPdf(null)}/>}
         </div>
@@ -1298,7 +1308,7 @@ const SeccionPacientes = ({ orders }) => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-gray-800 font-semibold text-sm truncate">{ex.exam?.name}</p>
-                                        <p className="text-gray-400 text-xs">{new Date(ex.orderDate).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>
+                                        <p className="text-gray-400 text-xs">{limaDate(ex.orderDate).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>
                                     </div>
                                     {ex.pdfData&&<i className="fas fa-eye text-purple-400 text-sm flex-shrink-0"></i>}
                                 </div>
@@ -1339,7 +1349,7 @@ const SeccionPacientes = ({ orders }) => {
                         {filteredWithDate.map((p,i)=>(
                             <div key={i} onClick={()=>setSelPet(p)}
                                 className="bg-white rounded-2xl p-5 border border-gray-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all">
-                                {petLatestDate[p.id||p.name]&&<p className="text-xs text-gray-400 mb-3">{new Date(petLatestDate[p.id||p.name]).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>}
+                                {petLatestDate[p.id||p.name]&&<p className="text-xs text-gray-400 mb-3">{limaDate(petLatestDate[p.id||p.name]).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>}
                                 <div className="flex items-center gap-4">
                                     <PetPhoto photo={p.photo} size="xl"/>
                                     <div className="flex-1 min-w-0">
@@ -1430,7 +1440,7 @@ const SeccionResultados = ({ orders }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pb-6">
                         {filtered.map((ex,i)=>(
                             <div key={i} onClick={()=>setSelPdf(ex)} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-purple-400 hover:shadow-md transition-all">
-                                <p className="text-xs text-gray-400 mb-2">{new Date(ex.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>
+                                <p className="text-xs text-gray-400 mb-2">{limaDate(ex.date).toLocaleDateString('es-PE',{day:'numeric',month:'long',year:'numeric'})}</p>
                                 <div className="flex items-center gap-3">
                                     <PetPhoto photo={ex.petPhoto} size="lg"/>
                                     <div className="flex-1 min-w-0">
@@ -1524,7 +1534,7 @@ const SeccionFacturacion = ({ orders }) => {
                         {filtered.map(o=>(<div key={o.id} onClick={()=>setSelPdf({url:o.invoicePdf,type:o.documentType,client:o.userName,date:o.completedAt||o.date,id:o.id,userId:o.userId,clientName:o.userName,examName:o.items?.[0]?.exam?.name||'',petName:getPetFullName(o.items?.[0]?.pet)})} className="bg-white rounded-xl p-4 border border-gray-200 cursor-pointer hover:border-amber-400 hover:shadow-md transition-all">
                             <div className="flex items-center gap-3">
                                 <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${o.documentType==='boleta'?'bg-cyan-100':'bg-amber-100'}`}><i className={`fas ${o.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} text-lg`}></i></div>
-                                <div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{o.userName}</p><p className="text-gray-600 text-xs">{o.documentType==='boleta'?'Boleta':'Factura'}</p><p className="text-gray-500 text-xs">{new Date(o.completedAt||o.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'})}</p></div>
+                                <div className="flex-1 min-w-0"><p className="text-gray-800 font-medium text-sm truncate">{o.userName}</p><p className="text-gray-600 text-xs">{o.documentType==='boleta'?'Boleta':'Factura'}</p><p className="text-gray-500 text-xs">{limaDate(o.completedAt||o.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'})}</p></div>
                                 <i className="fas fa-eye text-amber-600 text-sm flex-shrink-0"></i>
                             </div>
                         </div>))}
@@ -1843,7 +1853,7 @@ const VistaMoto = ({ orders, currentUser, onStatusChange, onLogout, success, set
                             <div className={`${si.bg} px-5 py-3 flex items-center gap-2 border-b border-gray-100`}>
                                 <i className={`fas ${si.icon} ${si.color} text-base`}></i>
                                 <span className={`text-base font-bold ${si.color}`}>{si.label}</span>
-                                <span className="ml-auto text-xs text-gray-500">{new Date(order.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                                <span className="ml-auto text-xs text-gray-500">{limaDate(order.date).toLocaleDateString('es-PE',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
                             </div>
                             <div className="p-5">
                                 {/* Cliente + llamada */}
