@@ -209,7 +209,7 @@ const api = {
     savePrecios:      (dtos)    => api.call('POST', '/api/Precios/bulk', dtos),
     getCatalog:       ()        => api.call('GET',  '/api/Catalog'),
     createExamen:     (data)    => api.call('POST', '/api/Catalog', data),
-    deleteExamen:     (id)      => api.call('DELETE', `/api/Catalog/${id}`),
+    deleteExamen:     (id, tipo) => api.call('DELETE', `/api/Precios/${id}/${tipo}`),
     enviarCorreo:     (id, tipo)=> api.call('POST', `/api/Orders/${id}/enviar-correo`, { tipo }),
     getNightMode:     ()        => api.call('GET',  '/api/Config/nightmode'),
     setNightMode:     (active)  => api.call('PUT',  '/api/Config/nightmode', { active }),
@@ -1633,9 +1633,18 @@ const SeccionCatalogo = () => {
         setTimeout(() => setMsg(''), 3000);
     };
 
-    const deleteExamen = async (id) => {
-        try { await api.deleteExamen(id); } catch {}
-        setCatalog(prev => prev.filter(e => e.id !== id));
+    const deleteExamen = async (examen) => {
+        const id = examen.id;
+        const tipo = examen.tipo;
+        try {
+            await api.deleteExamen(id, tipo);
+        } catch (e) {
+            setMsg('❌ Error al eliminar: ' + (e.message || 'No se pudo borrar del servidor'));
+            setConfirm(null);
+            setTimeout(() => setMsg(''), 4000);
+            return;
+        }
+        setCatalog(prev => prev.filter(e => !(e.id === id && e.tipo === tipo)));
         setEditados(prev => { const n={...prev}; delete n[id]; return n; });
         setConfirm(null); setMsg('✅ Examen eliminado');
         setTimeout(() => setMsg(''), 3000);
@@ -1754,7 +1763,7 @@ const SeccionCatalogo = () => {
                                             )}
                                             {/* Eliminar solo en modo edición */}
                                             {modoEdicion && (
-                                                <button onClick={() => setConfirm(ex.id)}
+                                                <button onClick={() => setConfirm(ex)}
                                                     className="w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-lg flex items-center justify-center transition-all flex-shrink-0">
                                                     <i className="fas fa-trash-alt text-xs"></i>
                                                 </button>
