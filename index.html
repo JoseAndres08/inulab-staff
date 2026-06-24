@@ -404,6 +404,18 @@ const STATUS_MAP = {
 const getStatusInfo = (s) => STATUS_MAP[s] || STATUS_MAP['pending'];
 
 const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const DESCRIPCIONES_SERVICIOS = {
+  'P1':  'Perfil Básico (Hemograma IDEXX + Reticulocitos + CHEM 10)',
+  'P2':  'Perfil CHEM 15 (Hemograma IDEXX + Reticulocitos + CHEM 15)',
+  'P3':  'Perfil Básico Renal (Hemograma + CHEM 10 + SDMA IDEXX)',
+  'P8':  'Perfil Hemoparásitos (Hemograma + Reticulocitos + SNAP 4DX Plus)',
+  'P9':  'Perfil Felino (Hemograma + Reticulocitos + SNAP Triple Felino)',
+  'U1':  'Examen de Orina Completo',
+  'PR3': 'Coprológico Completo',
+  'M1':  'Cultivo + 1 Antibiograma (Piel y Oído)',
+  'U2':  'Orina Completa + Urocultivo',
+  'U3':  'Ex. Orina Completo IDEXX (SEDIVUE DX)',
+};
 const NOMBRES_AMIGABLES={'Chequeo General':'Perfil Básico (Hemograma IDEXX + Reticulocitos + CHEM 10)','Chequeo Completo':'Perfil CHEM 15 (Hemograma IDEXX + Reticulocitos + CHEM 15)','Control de Riñones':'Perfil Básico Renal (Hemograma + CHEM 10 + SDMA IDEXX)','Mi perro está decaído':'Perfil Hemoparásitos (Hemograma + Reticulocitos + SNAP 4DX Plus)','Chequeo para Gatos':'Perfil Felino (Hemograma + Reticulocitos + SNAP Triple Felino)','Análisis de Orina':'Examen de Orina Completo','Análisis de Orina Básico':'Examen de Orina Completo','Examen de Heces':'Coprológico Completo','Problemas de Piel u Oídos':'Cultivo + 1 Antibiograma (Piel y Oído)'};const resolverNombreExamen=nombre=>NOMBRES_AMIGABLES[nombre]||nombre;
 
 const normalizeOrder = (o) => {
@@ -1741,7 +1753,7 @@ const SeccionCatalogo = () => {
                                         <div key={ex.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-gray-800 text-sm font-medium">{ex.nombre}</span>
-                                                <span className="text-gray-500 text-xs ml-2">{ex.id}</span>
+                                                <span className="text-gray-500 text-xs ml-2">{ex.id}</span>{ex.categoria==='Servicios'&&DESCRIPCIONES_SERVICIOS[ex.id]&&<span className="text-gray-400 text-xs ml-2">· {DESCRIPCIONES_SERVICIOS[ex.id]}</span>}
                                             </div>
                                             {modoEdicion ? (
                                                 <div className="flex items-center gap-1.5 flex-shrink-0">
