@@ -408,6 +408,7 @@ const STATUS_MAP = {
 const getStatusInfo = (s) => STATUS_MAP[s] || STATUS_MAP['pending'];
 
 const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const NOMBRES_AMIGABLES={'Chequeo General':'Perfil Básico (Hemograma IDEXX + Reticulocitos + CHEM 10)','Chequeo Completo':'Perfil CHEM 15 (Hemograma IDEXX + Reticulocitos + CHEM 15)','Control de Riñones':'Perfil Básico Renal (Hemograma + CHEM 10 + SDMA IDEXX)','Mi perro está decaído':'Perfil Hemoparásitos (Hemograma + Reticulocitos + SNAP 4DX Plus)','Chequeo para Gatos':'Perfil Felino (Hemograma + Reticulocitos + SNAP Combo Felino)','Análisis de Orina':'Examen de Orina Completo','Análisis de Orina Básico':'Examen de Orina Completo','Examen de Heces':'Coprológico Completo','Problemas de Piel u Oídos':'Cultivo + 1 Antibiograma (Piel y Oído)'};const resolverNombreExamen=nombre=>NOMBRES_AMIGABLES[nombre]||nombre;
 
 const normalizeOrder = (o) => {
     const statusList = ['pending','assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received','arrived_at_lab','processing','results_uploaded','completed'];
@@ -1077,7 +1078,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
                         <PetPhoto photo={item.pet?.photo} size="md"/>
                         <div className="flex-1 min-w-0">
-                            <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {item.exam?.name}</p>
+                            <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {resolverNombreExamen(item.exam?.name)}</p>
                             <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
                         </div>
                         {item.tomaMuestra&&<span className="flex-shrink-0 text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg px-2 py-1 font-medium"><i className="fas fa-syringe mr-1"></i>Toma solicitada</span>}
