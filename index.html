@@ -1069,9 +1069,9 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     {order.motoName&&!manualMode&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${si.bg} ${si.color}`}>
+                    {!(manualMode&&order.status==='assigned')&&<span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${si.bg} ${si.color}`}>
                         <i className={`fas ${si.icon} text-xs`}></i>{si.label}
-                    </span>
+                    </span>}
                     {/* Botón manual por tarjeta */}
                     {order.status !== 'completed' && (
                         <button onClick={async()=>{ const next=!manualMode; setManualMode(next); try{ await api.updateManual(order.id, next); }catch(e){ setManualMode(!next); } }}
