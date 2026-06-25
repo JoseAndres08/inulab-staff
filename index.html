@@ -722,7 +722,7 @@ const InvoiceModal = ({ order, onClose, onSuccess }) => {
     const [file, setFile] = useState(null); const [type, setType] = useState(order.documentType || 'boleta'); const typeFixed = order.invoiceRequested; const [loading, setLoading] = useState(false); const [msg, setMsg] = useState('');
     const submit = async () => {
         if (!file) { setMsg('Selecciona un PDF'); return; } setLoading(true);
-        try { const fd = new FormData(); fd.append('file', file); fd.append('orderId', order.id); fd.append('documentType', type); await api.uploadInvoice(fd); onSuccess('✅ Comprobante subido correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
+        try { const fd = new FormData(); fd.append('file', file); fd.append('orderId', order.id); fd.append('documentType', type); console.log('INVOICE UPLOAD orderId:', order.id, 'order:', order); await api.uploadInvoice(fd); onSuccess('✅ Comprobante subido correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
         setLoading(false);
     };
     return (
