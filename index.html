@@ -1483,7 +1483,7 @@ const SeccionResultados = ({ orders }) => {
 
 // ── PEDIDOS POR CONSOLIDAR ─────────────────────────────────────────────
 const SeccionPorConsolidar = ({ onSuccess, onBack }) => {
-    const [nivel, setNivel] = React.useState(1); // 1=entrada, 2=clientes, 3=pedidos
+    const [nivel, setNivel] = React.useState(2); // 2=clientes, 3=pedidos
     const [clientes, setClientes] = React.useState([]);
     const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null);
     const [pedidosSeleccionados, setPedidosSeleccionados] = React.useState([]);
