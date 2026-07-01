@@ -1681,10 +1681,7 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
     return (
         <div className="flex flex-col h-full relative">
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                    <button onClick={()=>setSubSeccion('comprobantes')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${subSeccion==='comprobantes'?'bg-amber-500 text-white':'bg-gray-100 text-gray-600'}`}><i className="fas fa-receipt mr-1"></i>Comprobantes</button>
-                    <button onClick={()=>setSubSeccion('por_consolidar')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${subSeccion==='por_consolidar'?'bg-violet-600 text-white':'bg-gray-100 text-gray-600'}`}><i className="fas fa-layer-group mr-1"></i>Pedidos por consolidar</button>
-                </div>
+
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-amber-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-invoice-dollar"></i>Facturación</span>
                     <button onClick={()=>setFacSubTab('entregadas')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${facSubTab==='entregadas'?'bg-amber-500 text-white':'bg-gray-100 text-gray-600'}`}>Entregadas</button>
