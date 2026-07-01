@@ -1482,7 +1482,7 @@ const SeccionResultados = ({ orders }) => {
 // ── SECCIÓN FACTURACIÓN (con filtro por fecha) ────
 
 // ── PEDIDOS POR CONSOLIDAR ─────────────────────────────────────────────
-const SeccionPorConsolidar = ({ onSuccess }) => {
+const SeccionPorConsolidar = ({ onSuccess, onBack }) => {
     const [nivel, setNivel] = React.useState(1); // 1=entrada, 2=clientes, 3=pedidos
     const [clientes, setClientes] = React.useState([]);
     const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null);
@@ -1491,6 +1491,8 @@ const SeccionPorConsolidar = ({ onSuccess }) => {
     const [showModal, setShowModal] = React.useState(false);
     const [file, setFile] = React.useState(null);
     const [msg, setMsg] = React.useState('');
+
+    React.useEffect(() => { cargarClientes(); }, []);
 
     const cargarClientes = async () => {
         setLoading(true);
@@ -1551,7 +1553,7 @@ const SeccionPorConsolidar = ({ onSuccess }) => {
     if (nivel === 2) return (
         <div className="flex flex-col h-full">
             <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 flex items-center gap-3">
-                <button onClick={()=>setNivel(1)} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-arrow-left text-sm"></i></button>
+                <button onClick={()=>onBack&&onBack()} className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-arrow-left text-sm"></i></button>
                 <span className="text-violet-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-layer-group"></i>Pedidos por consolidar</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
@@ -1666,7 +1668,7 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
 
     const anyFilter = search || filterDay || filterMonth || filterYear;
 
-    if (subSeccion === 'por_consolidar') return <SeccionPorConsolidar onSuccess={(msg)=>{setSubSeccion('comprobantes');onRefresh&&onRefresh(msg);}}/>;
+    if (subSeccion === 'por_consolidar') return <SeccionPorConsolidar onBack={()=>setSubSeccion('comprobantes')} onSuccess={(msg)=>{setSubSeccion('comprobantes');onRefresh&&onRefresh(msg);}}/>;
 
     return (
         <div className="flex flex-col h-full relative">
