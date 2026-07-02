@@ -1085,7 +1085,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     )}
                 </div>
             </div>
-            <div className="space-y-2 mb-3">
+            <div className="space-y-2 mb-3" style={{maxHeight:'calc(3 * 56px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
                 {order.items.map((item,i) => (
                     <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
                         <PetPhoto photo={item.pet?.photo} size="md"/>
