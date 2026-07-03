@@ -441,6 +441,7 @@ const normalizeOrder = (o) => {
         })),
         comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
+        estadoFacturacion: o.estadoFacturacion || o.EstadoFacturacion || 'normal',
         invoicePdf: fullUrl(o.invoicePdfUrl || o.invoicePdf),
         resultPdf: orderResultPdf,
         assignedTo: o.motorizadoId || o.assignedTo || null,
