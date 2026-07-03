@@ -1144,8 +1144,8 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
 // ── SECCIÓN INICIO ────────────────────────────────
 const SeccionInicio = ({ orders, user, onGoTo }) => {
     const [selPdf, setSelPdf] = useState(null);
-    const pending   = orders.filter(o => o.status !== 'completed' || !o.invoicePdf);
-    const completed = orders.filter(o => o.status === 'completed' && o.invoicePdf).sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
+    const pending   = orders.filter(o => (o.status !== 'completed' || !o.invoicePdf) && o.estadoFacturacion !== 'por_consolidar' && o.estadoFacturacion !== 'consolidado');
+    const completed = orders.filter(o => (o.status === 'completed' && o.invoicePdf) || o.estadoFacturacion === 'por_consolidar' || o.estadoFacturacion === 'consolidado').sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
     const lastResultOrder  = completed.find(o => o.items.some(it => it.pdfData));
     const lastInvoiceOrder = completed.find(o => o.invoicePdf);
     return (
@@ -1183,8 +1183,8 @@ const SeccionInicio = ({ orders, user, onGoTo }) => {
 // ── SECCIÓN PEDIDOS ───────────────────────────────
 const SeccionPedidos = ({ orders, onStatusChange, onSuccess, onRefresh }) => {
     const [tab, setTab] = useState('pending'); const [search, setSearch] = useState('');
-    const pending   = orders.filter(o => o.status !== 'completed' || !o.invoicePdf);
-    const completed = orders.filter(o => o.status === 'completed' && o.invoicePdf).sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
+    const pending   = orders.filter(o => (o.status !== 'completed' || !o.invoicePdf) && o.estadoFacturacion !== 'por_consolidar' && o.estadoFacturacion !== 'consolidado');
+    const completed = orders.filter(o => (o.status === 'completed' && o.invoicePdf) || o.estadoFacturacion === 'por_consolidar' || o.estadoFacturacion === 'consolidado').sort((a,b) => new Date(b.completedAt||b.date)-new Date(a.completedAt||a.date));
     const list = (tab==='pending'?pending:completed).filter(o => !search||o.userName.toLowerCase().includes(search.toLowerCase())||o.items.some(it=>it.exam?.name?.toLowerCase().includes(search.toLowerCase())||it.pet?.name?.toLowerCase().includes(search.toLowerCase())));
     return (
         <div className="flex flex-col h-full">
@@ -1687,11 +1687,6 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
                     <span className="text-amber-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-invoice-dollar"></i>Facturación</span>
                     <button onClick={()=>setFacSubTab('entregadas')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${facSubTab==='entregadas'?'bg-amber-500 text-white':'bg-gray-100 text-gray-600'}`}>Entregadas</button>
                     <button onClick={()=>setFacSubTab('diferidas')} className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${facSubTab==='diferidas'?'bg-violet-600 text-white':'bg-gray-100 text-gray-600'}`}>Diferidas</button>
-                    {facSubTab==='diferidas' && diferidas.length > 0 && (
-                        <button onClick={()=>setSubSeccion('por_consolidar')} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white transition-colors">
-                            <i className="fas fa-file-invoice mr-1"></i>Consolidar
-                        </button>
-                    )}
                     {/* Buscador */}
                     <div className="relative flex-1 min-w-36">
                         <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
