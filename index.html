@@ -1070,7 +1070,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                         <span className="text-gray-800 font-bold">{order.userName}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${order.userType==='medico'?'bg-emerald-100 text-emerald-700':'bg-blue-100 text-blue-700'}`}>{order.userType==='medico'?'Clínica':'Cliente'}</span>
                     </div>
-                    <p className="text-gray-500 text-xs">{limaDate(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</p>
+                    <p className="text-gray-500 text-xs">{limaDate(order.date).toLocaleString('es-PE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} <span className="text-gray-400">({order.items.length} {order.items.length===1?'examen':'exámenes'})</span></p>
                     {order.motoName&&!manualMode&&<p className="text-cyan-700 text-xs mt-0.5"><i className="fas fa-motorcycle mr-1"></i>{order.motoName}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
@@ -1086,18 +1086,24 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     )}
                 </div>
             </div>
-            <div className="space-y-2 mb-3" style={{maxHeight:'calc(3 * 56px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
-                {order.items.map((item,i) => (
-                    <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
-                        <PetPhoto photo={item.pet?.photo} size="md"/>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {resolverNombreExamen(item.exam?.name)}</p>
-                            <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
+            <div className="relative mb-3">
+                <div className="space-y-2" style={{maxHeight:'calc(3 * 56px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
+                    {order.items.map((item,i) => (
+                        <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
+                            <PetPhoto photo={item.pet?.photo} size="md"/>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {resolverNombreExamen(item.exam?.name)}</p>
+                                <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
+                            </div>
+                            {item.tomaMuestra&&<span className="flex-shrink-0 text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg px-2 py-1 font-medium"><i className="fas fa-syringe mr-1"></i>Toma solicitada</span>}
+                            {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
                         </div>
-                        {item.tomaMuestra&&<span className="flex-shrink-0 text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg px-2 py-1 font-medium"><i className="fas fa-syringe mr-1"></i>Toma solicitada</span>}
-                        {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
-                    </div>
-                ))}
+                    ))}
+                </div>
+                {order.items.length > 3 && <>
+                    <div className="pointer-events-none absolute top-0 left-0 right-0 h-3 rounded-t-lg" style={{background:'linear-gradient(to bottom, white, transparent)'}}></div>
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-3 rounded-b-lg" style={{background:'linear-gradient(to top, white, transparent)'}}></div>
+                </>}
             </div>
             {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
             {order.comment&&<p className="text-xs text-gray-500 mb-2"><i className="fas fa-comment-alt mr-1"></i>{order.comment}</p>}
