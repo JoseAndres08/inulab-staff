@@ -1087,9 +1087,9 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                 </div>
             </div>
             <div className="relative mb-3">
-                <div className="space-y-2" style={{maxHeight:'calc(3 * 56px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
+                <div className="bg-gray-100 rounded-xl p-2 space-y-2" style={{maxHeight:'calc(3 * 56px + 16px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
                     {order.items.map((item,i) => (
-                        <div key={i} className="bg-gray-50 rounded-lg p-2 flex items-center gap-2 border border-gray-100">
+                        <div key={i} className="bg-white rounded-lg p-2 flex items-center gap-2 shadow-sm">
                             <PetPhoto photo={item.pet?.photo} size="md"/>
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {resolverNombreExamen(item.exam?.name)}</p>
@@ -1101,8 +1101,8 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                     ))}
                 </div>
                 {order.items.length > 3 && <>
-                    <div className="pointer-events-none absolute top-0 left-0 right-0 h-3 rounded-t-lg" style={{background:'linear-gradient(to bottom, white, transparent)'}}></div>
-                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-3 rounded-b-lg" style={{background:'linear-gradient(to top, white, transparent)'}}></div>
+                    <div className="pointer-events-none absolute top-0 left-0 right-0 h-3 rounded-t-xl" style={{background:'linear-gradient(to bottom, #f3f4f6, transparent)'}}></div>
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-3 rounded-b-xl" style={{background:'linear-gradient(to top, #f3f4f6, transparent)'}}></div>
                 </>}
             </div>
             {order.status==='pending'&&!manualMode&&<p className="text-amber-600 text-xs mb-2"><i className="fas fa-clock mr-1"></i>Esperando moto...</p>}
