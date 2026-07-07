@@ -452,6 +452,7 @@ const normalizeOrder = (o) => {
         userId: o.userId || o.clientId,
         status, date: o.createdAt || o.date, completedAt: o.completedAt,
         items: (o.items || []).map(it => ({
+            id: it.id,
             exam: { id: it.examId || it.exam?.id, name: it.examName || it.exam?.name || 'Examen' },
             pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '', lastName: it.petLastName || it.pet?.lastName || '' },
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
@@ -703,11 +704,11 @@ const PdfModal = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, client
 // ── MODAL SUBIR RESULTADOS ────────────────────────
 const UploadResultsModal = ({ order, onClose, onSuccess }) => {
     const [files, setFiles] = useState({}); const [loading, setLoading] = useState(false); const [msg, setMsg] = useState('');
-    const handleFile = (idx, e) => { const f = e.target.files[0]; if (!f || f.type !== 'application/pdf') return; setFiles(prev => ({ ...prev, [idx]: f })); };
+    const handleFile = (itemId, e) => { const f = e.target.files[0]; if (!f || f.type !== 'application/pdf') return; setFiles(prev => ({ ...prev, [itemId]: f })); };
     const submit = async () => {
         const seleccionados = Object.keys(files); if (seleccionados.length === 0) { setMsg('Selecciona al menos un PDF para subir'); return; }
         setLoading(true);
-        try { for (const idxStr of seleccionados) { const i = Number(idxStr); const fd = new FormData(); fd.append('file', files[i]); fd.append('itemIndex', i); await api.uploadResult(order.id, fd); } onSuccess('✅ Resultados subidos correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
+        try { for (const itemId of seleccionados) { const fd = new FormData(); fd.append('file', files[itemId]); fd.append('itemId', itemId); await api.uploadResult(order.id, fd); } onSuccess('✅ Resultados subidos correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
         setLoading(false);
     };
     return (
@@ -720,13 +721,14 @@ const UploadResultsModal = ({ order, onClose, onSuccess }) => {
                 <div className="flex-1 overflow-y-auto p-5 space-y-3">
                     {order.items.map((item, idx) => {
                         const yaTieneResultado = !!(item.pdfUrl || item.pdfData);
+                        const itemId = item.id;
                         return (
-                        <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                            <div className="flex items-center gap-3 mb-3"><PetPhoto photo={item.pet?.photo} size="lg" /><div className="flex-1"><p className="font-semibold text-gray-800 text-sm">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs">{item.exam?.name}</p></div>{yaTieneResultado&&!files[idx]&&<span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-semibold whitespace-nowrap"><i className="fas fa-check mr-1"></i>Ya subido</span>}</div>
-                            {files[idx] ? (
-                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-lg"><i className="fas fa-check-circle text-emerald-600 text-sm"></i><span className="text-emerald-800 text-sm flex-1 truncate">{files[idx].name}</span><button onClick={() => setFiles(p => { const n={...p}; delete n[idx]; return n; })} className="text-gray-500 hover:text-gray-700"><i className="fas fa-times text-xs"></i></button></div>
+                        <div key={itemId || idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                            <div className="flex items-center gap-3 mb-3"><PetPhoto photo={item.pet?.photo} size="lg" /><div className="flex-1"><p className="font-semibold text-gray-800 text-sm">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs">{item.exam?.name}</p></div>{yaTieneResultado&&!files[itemId]&&<span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-semibold whitespace-nowrap"><i className="fas fa-check mr-1"></i>Ya subido</span>}</div>
+                            {files[itemId] ? (
+                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-lg"><i className="fas fa-check-circle text-emerald-600 text-sm"></i><span className="text-emerald-800 text-sm flex-1 truncate">{files[itemId].name}</span><button onClick={() => setFiles(p => { const n={...p}; delete n[itemId]; return n; })} className="text-gray-500 hover:text-gray-700"><i className="fas fa-times text-xs"></i></button></div>
                             ) : (
-                                <label className="flex items-center gap-3 bg-white border-2 border-dashed border-gray-300 hover:border-cyan-500 hover:bg-cyan-50 px-3 py-3 rounded-lg cursor-pointer transition-all"><i className="fas fa-upload text-gray-500"></i><span className="text-gray-600 text-sm">{yaTieneResultado?'Reemplazar PDF del resultado':'Seleccionar PDF del resultado'}</span><input type="file" accept="application/pdf" className="hidden" onChange={e => handleFile(idx, e)} /></label>
+                                <label className="flex items-center gap-3 bg-white border-2 border-dashed border-gray-300 hover:border-cyan-500 hover:bg-cyan-50 px-3 py-3 rounded-lg cursor-pointer transition-all"><i className="fas fa-upload text-gray-500"></i><span className="text-gray-600 text-sm">{yaTieneResultado?'Reemplazar PDF del resultado':'Seleccionar PDF del resultado'}</span><input type="file" accept="application/pdf" className="hidden" onChange={e => handleFile(itemId, e)} /></label>
                             )}
                         </div>
                     );})}
