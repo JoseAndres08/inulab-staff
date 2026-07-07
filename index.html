@@ -20,6 +20,25 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
         * { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+        /* Scrollbar siempre visible (evita que macOS la oculte por defecto) */
+        .always-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #9ca3af transparent;
+        }
+        .always-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            display: block;
+        }
+        .always-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .always-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #9ca3af;
+            border-radius: 3px;
+        }
+        .always-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
+        }
         /* Prevenir bounce/rubber-band en iOS */
         html {
             overflow: hidden;
@@ -686,9 +705,9 @@ const UploadResultsModal = ({ order, onClose, onSuccess }) => {
     const [files, setFiles] = useState({}); const [loading, setLoading] = useState(false); const [msg, setMsg] = useState('');
     const handleFile = (idx, e) => { const f = e.target.files[0]; if (!f || f.type !== 'application/pdf') return; setFiles(prev => ({ ...prev, [idx]: f })); };
     const submit = async () => {
-        const allHave = order.items.every((_, i) => files[i]); if (!allHave) { setMsg('Sube el PDF de cada examen'); return; }
+        const seleccionados = Object.keys(files); if (seleccionados.length === 0) { setMsg('Selecciona al menos un PDF para subir'); return; }
         setLoading(true);
-        try { for (let i = 0; i < order.items.length; i++) { const fd = new FormData(); fd.append('file', files[i]); fd.append('itemIndex', i); await api.uploadResult(order.id, fd); } onSuccess('✅ Resultados subidos correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
+        try { for (const idxStr of seleccionados) { const i = Number(idxStr); const fd = new FormData(); fd.append('file', files[i]); fd.append('itemIndex', i); await api.uploadResult(order.id, fd); } onSuccess('✅ Resultados subidos correctamente'); onClose(); } catch (e) { setMsg('❌ Error: ' + e.message); }
         setLoading(false);
     };
     return (
@@ -699,16 +718,18 @@ const UploadResultsModal = ({ order, onClose, onSuccess }) => {
                     <button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                    {order.items.map((item, idx) => (
+                    {order.items.map((item, idx) => {
+                        const yaTieneResultado = !!(item.pdfUrl || item.pdfData);
+                        return (
                         <div key={idx} className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                            <div className="flex items-center gap-3 mb-3"><PetPhoto photo={item.pet?.photo} size="lg" /><div><p className="font-semibold text-gray-800 text-sm">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs">{item.exam?.name}</p></div></div>
+                            <div className="flex items-center gap-3 mb-3"><PetPhoto photo={item.pet?.photo} size="lg" /><div className="flex-1"><p className="font-semibold text-gray-800 text-sm">{getPetFullName(item.pet)}</p><p className="text-gray-600 text-xs">{item.exam?.name}</p></div>{yaTieneResultado&&!files[idx]&&<span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-semibold whitespace-nowrap"><i className="fas fa-check mr-1"></i>Ya subido</span>}</div>
                             {files[idx] ? (
                                 <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-300 px-3 py-2 rounded-lg"><i className="fas fa-check-circle text-emerald-600 text-sm"></i><span className="text-emerald-800 text-sm flex-1 truncate">{files[idx].name}</span><button onClick={() => setFiles(p => { const n={...p}; delete n[idx]; return n; })} className="text-gray-500 hover:text-gray-700"><i className="fas fa-times text-xs"></i></button></div>
                             ) : (
-                                <label className="flex items-center gap-3 bg-white border-2 border-dashed border-gray-300 hover:border-cyan-500 hover:bg-cyan-50 px-3 py-3 rounded-lg cursor-pointer transition-all"><i className="fas fa-upload text-gray-500"></i><span className="text-gray-600 text-sm">Seleccionar PDF del resultado</span><input type="file" accept="application/pdf" className="hidden" onChange={e => handleFile(idx, e)} /></label>
+                                <label className="flex items-center gap-3 bg-white border-2 border-dashed border-gray-300 hover:border-cyan-500 hover:bg-cyan-50 px-3 py-3 rounded-lg cursor-pointer transition-all"><i className="fas fa-upload text-gray-500"></i><span className="text-gray-600 text-sm">{yaTieneResultado?'Reemplazar PDF del resultado':'Seleccionar PDF del resultado'}</span><input type="file" accept="application/pdf" className="hidden" onChange={e => handleFile(idx, e)} /></label>
                             )}
                         </div>
-                    ))}
+                    );})}
                     {msg && <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{msg}</p>}
                 </div>
                 <div className="p-5 border-t border-gray-200 flex-shrink-0">
@@ -1087,7 +1108,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                 </div>
             </div>
             <div className="relative mb-3">
-                <div className="bg-gray-100 rounded-xl p-2 space-y-2" style={{maxHeight:'calc(3 * 56px + 16px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
+                <div className={`bg-gray-100 rounded-xl p-2 space-y-2 ${order.items.length > 3 ? 'always-scrollbar' : ''}`} style={{maxHeight:'calc(3 * 56px + 16px)',overflowY: order.items.length > 3 ? 'auto' : 'visible'}}>
                     {order.items.map((item,i) => (
                         <div key={i} className="bg-white rounded-lg p-2 flex items-center gap-2 shadow-sm">
                             <PetPhoto photo={item.pet?.photo} size="md"/>
