@@ -461,6 +461,7 @@ const normalizeOrder = (o) => {
         })),
         comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
+        billingIdentifierValue: o.billingIdentifierValue || null,
         estadoFacturacion: o.estadoFacturacion || o.EstadoFacturacion || 'normal',
         invoicePdf: fullUrl(o.invoicePdfUrl || o.invoicePdf),
         resultPdf: orderResultPdf,
@@ -1137,7 +1138,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                   </div>
                 : <p className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 mb-2 inline-flex items-center gap-1"><i className="fas fa-box mr-1"></i>Para Recojo</p>
             }
-            {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span></p>}
+            {order.invoiceRequested&&<p className="text-xs mb-2"><i className={`fas ${order.documentType==='boleta'?'fa-receipt text-cyan-600':'fa-file-invoice-dollar text-amber-600'} mr-1`}></i><span className={order.documentType==='boleta'?'text-cyan-700':'text-amber-700'}>{order.documentType==='boleta'?'Boleta':'Factura'} solicitada</span>{order.billingIdentifierValue&&<span className="text-gray-500 font-normal"> · {order.documentType==='boleta'?'DNI':'RUC'}: {order.billingIdentifierValue}</span>}</p>}
             <div className="flex items-center justify-between gap-2 mt-2">
                 <div className="flex flex-wrap gap-2">
                     {order.status==='pending'&&<button onClick={()=>setShowAssign(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"><i className="fas fa-user-check mr-1"></i>Asignar moto</button>}
