@@ -8,6 +8,9 @@
     <title>INULABORATORIOS - Panel Staff</title>
     <meta name="description" content="Panel de gestión staff - Inulaboratorios">
     <meta name="theme-color" content="#0891b2">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="icons/favicon-32.png">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script>window.BABEL_OPTIONS_OVERRIDE = {sourceType: "script"};</script>
@@ -2574,6 +2577,16 @@ requestAnimationFrame(() => {
     if (splash) { splash.style.transition = 'opacity 0.3s'; splash.style.opacity = '0'; setTimeout(() => splash.remove(), 300); }
 });
     
+    </script>
+    <script>
+    // Registro del Service Worker (PWA) — sin JSX, script normal
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.warn('[Inulab Staff SW] registro falló:', err);
+            });
+        });
+    }
     </script>
 </body>
 </html>
