@@ -446,8 +446,7 @@ const NOMBRES_AMIGABLES={'Chequeo General':'Perfil Básico (Hemograma IDEXX + Re
 const normalizeOrder = (o) => {
     const statusList = ['pending','assigned','moto_en_camino','moto_arrived','pickup_in_progress','sample_received','arrived_at_lab','processing','results_uploaded','completed'];
     const status = typeof o.status === 'number' ? (statusList[o.status] || 'pending') : (o.status || 'pending');
-    const fullUrl = (url) => { if (!url) return null; if (url.startsWith('http') || url.startsWith('data:')) return url; return API_BASE + url; };
-    const orderResultPdf = fullUrl(o.resultPdfUrl || o.ResultPdfUrl);
+    const orderResultPdf = o.hasResultPdf ? `${API_BASE}/api/Orders/${o.id}/result-pdf` : null;
     return {
         id: o.id,
         userName: o.userName || o.serviceName || o.clientName || 'Cliente',
@@ -459,14 +458,14 @@ const normalizeOrder = (o) => {
             exam: { id: it.examId || it.exam?.id, name: it.examName || it.exam?.name || 'Examen' },
             pet:  { id: it.petId || it.pet?.id, name: it.petName || it.pet?.name || 'Mascota', photo: it.petPhoto || it.pet?.photo || '🐾', owner: it.petOwner || it.pet?.owner || '', lastName: it.petLastName || it.pet?.lastName || '' },
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
-            pdfData: fullUrl(it.pdfUrl || it.pdfData),
+            pdfData: it.hasPdf ? `${API_BASE}/api/Orders/${o.id}/items/${it.id}/result-pdf` : null,
             tomaMuestra: it.tomaMuestra || it.TomaMuestra || false,
         })),
         comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
         billingIdentifierValue: o.billingIdentifierValue || null,
         estadoFacturacion: o.estadoFacturacion || o.EstadoFacturacion || 'normal',
-        invoicePdf: fullUrl(o.invoicePdfUrl || o.invoicePdf),
+        invoicePdf: o.hasInvoicePdf ? `${API_BASE}/api/Orders/${o.id}/invoice-pdf` : null,
         resultPdf: orderResultPdf,
         assignedTo: o.motorizadoId || o.assignedTo || null,
         motoName: o.motorizado?.username || o.motoName || null,
