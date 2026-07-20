@@ -1809,7 +1809,10 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
 const SeccionCatalogo = () => {
     const [catalog, setCatalog]     = useState(CATALOG_DEFAULT);
     const [precios, setPrecios]     = useState({});
+    const [descripciones, setDescripciones] = useState({}); // ← NUEVO: subtítulo/descripción actual por examen (desde DB)
     const [editados, setEditados]   = useState({});
+    const [descEditadas, setDescEditadas] = useState({}); // ← NUEVO: subtítulos editados pendientes de guardar
+    const [descAbiertos, setDescAbiertos] = useState({}); // ← NUEVO: qué examenes tienen el input de subtítulo visible
     const [filtro, setFiltro]       = useState('medico');
     const [buscar, setBuscar]       = useState('');
     const [modoEdicion, setModoEdicion] = useState(false); // ← NUEVO: modo edición
@@ -1823,30 +1826,43 @@ const SeccionCatalogo = () => {
     useEffect(() => {
         api.getCatalog().then(data => { if (Array.isArray(data) && data.length > 0) setCatalog(data); }).catch(() => {});
         api.getPrecios().then(data => {
-            if (Array.isArray(data)) { const map = {}; data.forEach(p => { map[p.examenId] = p.precio; }); setPrecios(map); }
+            if (Array.isArray(data)) {
+                const map = {}; const descMap = {};
+                data.forEach(p => { map[p.examenId] = p.precio; descMap[p.examenId] = p.descripcion || ''; });
+                setPrecios(map); setDescripciones(descMap);
+            }
         }).catch(() => {});
     }, []);
 
     const filteredCat = catalog.filter(e => e.tipo === filtro && (!buscar || e.nombre.toLowerCase().includes(buscar.toLowerCase()) || e.categoria.toLowerCase().includes(buscar.toLowerCase())));
     const categorias  = [...new Set(filteredCat.map(e => e.categoria))].sort();
-    const cambios     = Object.keys(editados).length;
+    const idsCambiados = new Set([...Object.keys(editados), ...Object.keys(descEditadas)]);
+    const cambios     = idsCambiados.size;
 
     const guardar = async () => {
         if (!cambios) return;
         setGuardando(true);
         try {
-            const dtos = Object.entries(editados).map(([id, precio]) => { const ex = catalog.find(e => e.id === id && e.tipo === filtro) || catalog.find(e => e.id === id) || { nombre: id, tipo: filtro }; return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio }; });
+            const dtos = [...idsCambiados].map(id => {
+                const ex = catalog.find(e => e.id === id && e.tipo === filtro) || catalog.find(e => e.id === id) || { nombre: id, tipo: filtro };
+                const precio = editados[id] !== undefined ? editados[id] : (precios[id] !== undefined ? precios[id] : ex.precio);
+                const descripcion = descEditadas[id] !== undefined ? descEditadas[id] : (descripciones[id] !== undefined ? descripciones[id] : '');
+                return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio, descripcion };
+            });
             await api.savePrecios(dtos);
             setPrecios(p => ({ ...p, ...editados }));
+            setDescripciones(d => ({ ...d, ...descEditadas }));
             setEditados({});
-            setMsg('✅ Precios guardados correctamente');
+            setDescEditadas({});
+            setDescAbiertos({});
+            setMsg('✅ Cambios guardados correctamente');
             setModoEdicion(false); // vuelve a modo lectura
         } catch (e) { setMsg('❌ Error: ' + e.message); }
         setGuardando(false);
         setTimeout(() => setMsg(''), 4000);
     };
 
-    const cancelarEdicion = () => { setEditados({}); setModoEdicion(false); };
+    const cancelarEdicion = () => { setEditados({}); setDescEditadas({}); setDescAbiertos({}); setModoEdicion(false); };
 
     const addExamen = async () => {
         const nombre = form.nombre.trim(), categoria = form.categoria.trim();
@@ -1905,6 +1921,7 @@ const SeccionCatalogo = () => {
         }
         setCatalog(prev => prev.filter(e => !(e.id === id && e.tipo === tipo)));
         setEditados(prev => { const n={...prev}; delete n[id]; return n; });
+        setDescEditadas(prev => { const n={...prev}; delete n[id]; return n; });
         setConfirm(null); setMsg('✅ Examen eliminado');
         setTimeout(() => setMsg(''), 3000);
     };
@@ -1962,7 +1979,7 @@ const SeccionCatalogo = () => {
                 {modoEdicion && (
                     <div className="mt-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5 flex items-center gap-2">
                         <i className="fas fa-pencil-alt text-amber-600 text-sm"></i>
-                        <p className="text-amber-800 text-sm font-medium">Modo edición activo — modifica los precios y presiona <strong>Guardar</strong></p>
+                        <p className="text-amber-800 text-sm font-medium">Modo edición activo — modifica precios o el lápiz <i className="fas fa-pencil-alt"></i> para el subtítulo, y presiona <strong>Guardar</strong></p>
                         {cambios > 0 && <span className="ml-auto bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{cambios} cambios</span>}
                     </div>
                 )}
@@ -1999,11 +2016,18 @@ const SeccionCatalogo = () => {
                                     // Valor para el input en modo edición
                                     const val    = editados[ex.id] !== undefined ? editados[ex.id] : (precioMostrar ?? 0);
                                     const edited = editados[ex.id] !== undefined;
+                                    // Subtítulo/descripción: prioridad edición pendiente > valor de la API
+                                    const descActual = descripciones[ex.id] || '';
+                                    const descVal     = descEditadas[ex.id] !== undefined ? descEditadas[ex.id] : descActual;
+                                    const descEditada = descEditadas[ex.id] !== undefined;
+                                    const descOpen     = !!descAbiertos[ex.id];
                                     return (
-                                        <div key={ex.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                                        <div key={ex.id} className="flex flex-col px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                                        <div className="flex items-center gap-3">
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-gray-800 text-sm font-medium">{ex.nombre}</span>
                                                 <span className="text-gray-500 text-xs ml-2">{ex.id}</span>{ex.categoria==='Servicios'&&DESCRIPCIONES_SERVICIOS[ex.id]&&<span className="text-gray-400 text-xs ml-2">· {DESCRIPCIONES_SERVICIOS[ex.id]}</span>}
+                                                {!modoEdicion && descActual && <span className="text-gray-400 text-xs ml-2">· {descActual}</span>}
                                             </div>
                                             {modoEdicion ? (
                                                 <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -2020,6 +2044,14 @@ const SeccionCatalogo = () => {
                                                     </span>
                                                 </div>
                                             )}
+                                            {/* Lápiz para editar el subtítulo, solo en modo edición */}
+                                            {modoEdicion && (
+                                                <button onClick={() => setDescAbiertos(prev => ({ ...prev, [ex.id]: !prev[ex.id] }))}
+                                                    title="Editar subtítulo"
+                                                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${descEditada?'bg-amber-100 text-amber-600':'bg-indigo-50 hover:bg-indigo-100 text-indigo-500'}`}>
+                                                    <i className="fas fa-pencil-alt text-xs"></i>
+                                                </button>
+                                            )}
                                             {/* Eliminar solo en modo edición */}
                                             {modoEdicion && (
                                                 <button onClick={() => setConfirm(ex)}
@@ -2027,6 +2059,16 @@ const SeccionCatalogo = () => {
                                                     <i className="fas fa-trash-alt text-xs"></i>
                                                 </button>
                                             )}
+                                        </div>
+                                        {/* Input inline del subtítulo, solo si el lápiz está activado */}
+                                        {modoEdicion && descOpen && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <i className="fas fa-pencil-alt text-indigo-400 text-xs flex-shrink-0"></i>
+                                                <input type="text" value={descVal} placeholder="Subtítulo (ej: Piel / Oído)"
+                                                    onChange={e => setDescEditadas(prev => ({ ...prev, [ex.id]: e.target.value }))}
+                                                    className={`flex-1 px-3 py-1.5 rounded-lg text-xs focus:outline-none transition-all border ${descEditada?'bg-amber-50 border-amber-400 text-amber-800':'bg-white border-gray-300 text-gray-700 focus:border-indigo-500'}`}/>
+                                            </div>
+                                        )}
                                         </div>
                                     );
                                 })}
