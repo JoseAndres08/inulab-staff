@@ -2030,7 +2030,7 @@ const SeccionCatalogo = () => {
                                             <div className="flex-1 min-w-0">
                                                 <span className="text-gray-800 text-sm font-medium">{nombreMostrar}</span>
                                                 <span className="text-gray-500 text-xs ml-2">{ex.id}</span>{ex.categoria==='Servicios'&&DESCRIPCIONES_SERVICIOS[ex.id]&&<span className="text-gray-400 text-xs ml-2">· {DESCRIPCIONES_SERVICIOS[ex.id]}</span>}
-                                                {!modoEdicion && descActual && <span className="text-gray-400 text-xs ml-2">· {descActual}</span>}
+                                                {descVal && <span className="text-gray-400 text-xs ml-2">· {descVal}</span>}
                                             </div>
                                             {modoEdicion ? (
                                                 <div className="flex items-center gap-1.5 flex-shrink-0">
