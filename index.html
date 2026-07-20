@@ -1809,6 +1809,7 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
 const SeccionCatalogo = () => {
     const [catalog, setCatalog]     = useState(CATALOG_DEFAULT);
     const [precios, setPrecios]     = useState({});
+    const [nombres, setNombres]     = useState({}); // ← NUEVO: nombre real desde la BD (por si difiere del catálogo hardcodeado)
     const [descripciones, setDescripciones] = useState({}); // ← NUEVO: subtítulo/descripción actual por examen (desde DB)
     const [editados, setEditados]   = useState({});
     const [descEditadas, setDescEditadas] = useState({}); // ← NUEVO: subtítulos editados pendientes de guardar
@@ -1827,14 +1828,14 @@ const SeccionCatalogo = () => {
         api.getCatalog().then(data => { if (Array.isArray(data) && data.length > 0) setCatalog(data); }).catch(() => {});
         api.getPrecios().then(data => {
             if (Array.isArray(data)) {
-                const map = {}; const descMap = {};
-                data.forEach(p => { map[p.examenId] = p.precio; descMap[p.examenId] = p.descripcion || ''; });
-                setPrecios(map); setDescripciones(descMap);
+                const map = {}; const descMap = {}; const nombreMap = {};
+                data.forEach(p => { map[p.examenId] = p.precio; descMap[p.examenId] = p.descripcion || ''; if (p.nombre) nombreMap[p.examenId] = p.nombre; });
+                setPrecios(map); setDescripciones(descMap); setNombres(nombreMap);
             }
         }).catch(() => {});
     }, []);
 
-    const filteredCat = catalog.filter(e => e.tipo === filtro && (!buscar || e.nombre.toLowerCase().includes(buscar.toLowerCase()) || e.categoria.toLowerCase().includes(buscar.toLowerCase())));
+    const filteredCat = catalog.filter(e => e.tipo === filtro && (!buscar || (nombres[e.id] || e.nombre).toLowerCase().includes(buscar.toLowerCase()) || e.categoria.toLowerCase().includes(buscar.toLowerCase())));
     const categorias  = [...new Set(filteredCat.map(e => e.categoria))].sort();
     const idsCambiados = new Set([...Object.keys(editados), ...Object.keys(descEditadas)]);
     const cambios     = idsCambiados.size;
@@ -1845,9 +1846,10 @@ const SeccionCatalogo = () => {
         try {
             const dtos = [...idsCambiados].map(id => {
                 const ex = catalog.find(e => e.id === id && e.tipo === filtro) || catalog.find(e => e.id === id) || { nombre: id, tipo: filtro };
+                const nombre = nombres[id] || ex.nombre;
                 const precio = editados[id] !== undefined ? editados[id] : (precios[id] !== undefined ? precios[id] : ex.precio);
                 const descripcion = descEditadas[id] !== undefined ? descEditadas[id] : (descripciones[id] !== undefined ? descripciones[id] : '');
-                return { examenId: id, nombre: ex.nombre, tipoUsuario: ex.tipo, precio, descripcion };
+                return { examenId: id, nombre, tipoUsuario: ex.tipo, precio, descripcion };
             });
             await api.savePrecios(dtos);
             setPrecios(p => ({ ...p, ...editados }));
@@ -2014,6 +2016,7 @@ const SeccionCatalogo = () => {
                                     const precioDefault = ex.precio; // precio del CATALOG_DEFAULT
                                     const precioMostrar = (precioApi !== undefined && precioApi !== null) ? precioApi : (precioDefault ?? null);
                                     // Valor para el input en modo edición
+                                    const nombreMostrar = nombres[ex.id] || ex.nombre;
                                     const val    = editados[ex.id] !== undefined ? editados[ex.id] : (precioMostrar ?? 0);
                                     const edited = editados[ex.id] !== undefined;
                                     // Subtítulo/descripción: prioridad edición pendiente > valor de la API
@@ -2025,7 +2028,7 @@ const SeccionCatalogo = () => {
                                         <div key={ex.id} className="flex flex-col px-4 py-2.5 hover:bg-gray-50 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="flex-1 min-w-0">
-                                                <span className="text-gray-800 text-sm font-medium">{ex.nombre}</span>
+                                                <span className="text-gray-800 text-sm font-medium">{nombreMostrar}</span>
                                                 <span className="text-gray-500 text-xs ml-2">{ex.id}</span>{ex.categoria==='Servicios'&&DESCRIPCIONES_SERVICIOS[ex.id]&&<span className="text-gray-400 text-xs ml-2">· {DESCRIPCIONES_SERVICIOS[ex.id]}</span>}
                                                 {!modoEdicion && descActual && <span className="text-gray-400 text-xs ml-2">· {descActual}</span>}
                                             </div>
