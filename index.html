@@ -460,6 +460,7 @@ const normalizeOrder = (o) => {
             address: { name: it.addressName || it.address?.name || '', address: it.addressStreet || it.address?.street || it.address?.address || 'N/A', district: it.addressDistrict || it.address?.district || 'N/A', reference: it.addressReference || it.address?.reference || '' },
             pdfData: it.hasPdf ? `${API_BASE}/api/Orders/${o.id}/items/${it.id}/result-pdf` : null,
             tomaMuestra: it.tomaMuestra || it.TomaMuestra || false,
+            antecedentes: it.antecedentes || it.Antecedentes || null,
         })),
         comment: o.comment || '', staffComment: o.staffComment || '', documentType: o.documentType || 'boleta',
         invoiceRequested: o.invoiceRequested || false, invoiceStatus: o.invoiceStatus || null,
@@ -1120,6 +1121,7 @@ const OrderCard = ({ order, onStatusChange, onSuccess, highlight }) => {
                             <div className="flex-1 min-w-0">
                                 <p className="text-gray-800 font-medium text-sm truncate">{getPetFullName(item.pet)} · {resolverNombreExamen(item.exam?.name)}</p>
                                 <p className="text-gray-400 text-xs truncate"><i className="fas fa-map-marker-alt mr-1"></i>{item.address?.district}</p>
+                                {item.antecedentes&&<p className="text-amber-700 text-xs truncate mt-0.5" title={item.antecedentes}><i className="fas fa-clipboard-list mr-1"></i>{item.antecedentes}</p>}
                             </div>
                             {item.tomaMuestra&&<span className="flex-shrink-0 text-xs bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg px-2 py-1 font-medium"><i className="fas fa-syringe mr-1"></i>Toma solicitada</span>}
                             {item.pdfData&&<button onClick={()=>setShowPdf({url:item.pdfData,title:item.exam?.name,sub:getPetFullName(item.pet),id:order.id,userId:order.userId,clientName:order.userName,examName:item.exam?.name,petName:getPetFullName(item.pet)})} className="w-8 h-8 bg-purple-100 hover:bg-purple-200 rounded-lg flex items-center justify-center text-purple-600 transition-colors flex-shrink-0"><i className="fas fa-eye text-xs"></i></button>}
