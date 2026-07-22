@@ -2574,11 +2574,13 @@ const App = () => {
                 osc.stop(ctx.currentTime + start + duration + 0.05);
             };
             const fire = () => {
-                // Campanita "ding-dong" repetida dos veces — más notoria y sostenida que un beep corto
-                tone(880, 0,    0.28);
-                tone(660, 0.30, 0.35);
-                tone(880, 0.95, 0.28);
-                tone(660, 1.25, 0.35);
+                // Campanita "ding-dong" repetida tres veces — más larga y notoria
+                tone(880, 0,    0.35);
+                tone(660, 0.38, 0.45);
+                tone(880, 1.10, 0.35);
+                tone(660, 1.48, 0.45);
+                tone(880, 2.20, 0.35);
+                tone(660, 2.58, 0.45);
             };
             if (ctx.state === 'suspended') { ctx.resume().then(fire).catch(() => {}); }
             else { fire(); }
