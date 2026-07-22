@@ -2529,6 +2529,24 @@ const App = () => {
     const [motoSuccess, setMotoSuccess] = useState('');
     const [nuevoPedidoAlerta, setNuevoPedidoAlerta] = useState(null);
     const ultimaRevisionRef = useRef(null);
+    const audioCtxRef = useRef(null);
+
+    // Desbloquea el audio en cuanto el usuario haga cualquier clic en la página.
+    // Los navegadores bloquean el sonido si no hubo ninguna interacción del
+    // usuario en esa carga de página (aunque el usuario ya tenga sesión activa
+    // por el token guardado, sin haber hecho clic en nada todavía).
+    useEffect(() => {
+        const unlockAudio = () => {
+            try {
+                if (!audioCtxRef.current) {
+                    audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtxRef.current.state === 'suspended') { audioCtxRef.current.resume().catch(() => {}); }
+            } catch (e) {}
+        };
+        document.addEventListener('click', unlockAudio);
+        return () => document.removeEventListener('click', unlockAudio);
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('inulab_token');
@@ -2554,7 +2572,6 @@ const App = () => {
         }
     }, [auth]);
 
-    const audioCtxRef = useRef(null);
     const playBeep = () => {
         try {
             if (!audioCtxRef.current) {
