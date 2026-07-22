@@ -2528,24 +2528,30 @@ const App = () => {
     const [success, setSuccess]     = useState('');
     const [motoSuccess, setMotoSuccess] = useState('');
     const [nuevoPedidoAlerta, setNuevoPedidoAlerta] = useState(null);
+    const [audioActivado, setAudioActivado] = useState(false);
     const ultimaRevisionRef = useRef(null);
     const audioCtxRef = useRef(null);
 
-    // Desbloquea el audio en cuanto el usuario haga cualquier clic en la página.
-    // Los navegadores bloquean el sonido si no hubo ninguna interacción del
-    // usuario en esa carga de página (aunque el usuario ya tenga sesión activa
-    // por el token guardado, sin haber hecho clic en nada todavía).
+    const unlockAudio = () => {
+        try {
+            if (!audioCtxRef.current) {
+                audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtxRef.current.state === 'suspended') { audioCtxRef.current.resume().catch(() => {}); }
+            setAudioActivado(true);
+        } catch (e) {}
+    };
+
+    // Desbloquea el audio en cuanto el usuario haga cualquier interacción con la
+    // página (clic, tecla, toque). Los navegadores bloquean el sonido si no hubo
+    // ninguna interacción del usuario en esa carga de página (por ejemplo, si
+    // entró directo al dashboard con la sesión ya guardada, sin loguearse de
+    // nuevo). Como respaldo, también se muestra un botón explícito para activarlo
+    // a mano (ver más abajo, en el header), por si no hizo ninguna interacción.
     useEffect(() => {
-        const unlockAudio = () => {
-            try {
-                if (!audioCtxRef.current) {
-                    audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtxRef.current.state === 'suspended') { audioCtxRef.current.resume().catch(() => {}); }
-            } catch (e) {}
-        };
-        document.addEventListener('click', unlockAudio);
-        return () => document.removeEventListener('click', unlockAudio);
+        const eventos = ['click', 'mousedown', 'keydown', 'touchstart'];
+        eventos.forEach(ev => document.addEventListener(ev, unlockAudio));
+        return () => eventos.forEach(ev => document.removeEventListener(ev, unlockAudio));
     }, []);
 
     useEffect(() => {
@@ -2712,7 +2718,6 @@ const App = () => {
                     <span className="text-base font-light text-gray-700 tracking-wide hidden sm:block">INULABORATORIOS</span>
                 </div>
                 <div className="flex items-center gap-4">
-
                     <div className="text-right">
                         <p className="text-sm font-semibold text-gray-800">{user?.username||'Admin'}</p>
                         <p className="text-xs text-gray-500">Administrador</p>
