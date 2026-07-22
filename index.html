@@ -248,6 +248,7 @@ const api = {
     diferirPedido:    (id)       => api.call('PATCH', `/api/Facturas/diferir/${id}`),
     getPorConsolidar: ()         => api.call('GET',   '/api/Facturas/por-consolidar'),
     uploadConsolidada:(fd)       => api.upload('/api/Facturas/consolidada', fd),
+    getPedidosNuevos: (desde)    => api.call('GET',   `/api/Orders/nuevos?desde=${encodeURIComponent(desde)}`),
 };
 
 // Precios hardcodeados desde las imágenes del cliente (fallback si la API no responde)
@@ -2526,6 +2527,8 @@ const App = () => {
     const [password, setPassword]   = useState('');
     const [success, setSuccess]     = useState('');
     const [motoSuccess, setMotoSuccess] = useState('');
+    const [nuevoPedidoAlerta, setNuevoPedidoAlerta] = useState(null);
+    const ultimaRevisionRef = useRef(null);
 
     useEffect(() => {
         const token = localStorage.getItem('inulab_token');
@@ -2534,6 +2537,53 @@ const App = () => {
     }, []);
 
     useEffect(() => { if (!auth) return; const t = setInterval(loadOrders, 5000); return () => clearInterval(t); }, [auth]);
+
+    // Notificaciones de pedidos nuevos: apenas hay sesión activa, se marca el
+    // "punto de partida" con la hora del SERVIDOR (no la del navegador, que
+    // puede estar mal configurada) y desde ahí se revisa cada 15s si llegó algo nuevo.
+    useEffect(() => {
+        if (!auth) return;
+        api.getPedidosNuevos(new Date().toISOString())
+            .then(r => { ultimaRevisionRef.current = r.servidorHoraActual; })
+            .catch(() => { ultimaRevisionRef.current = new Date().toISOString(); });
+    }, [auth]);
+
+    const playBeep = () => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.5);
+        } catch (e) {}
+    };
+
+    const checkPedidosNuevos = async () => {
+        if (!ultimaRevisionRef.current) return;
+        try {
+            const data = await api.getPedidosNuevos(ultimaRevisionRef.current);
+            if (data.count > 0) {
+                data.pedidos.forEach(p => {
+                    const primerItem = p.items && p.items[0];
+                    const examen = primerItem?.examName || 'Examen';
+                    const extra = p.items && p.items.length > 1 ? ` +${p.items.length - 1}` : '';
+                    const mascota = primerItem?.petName ? ` — ${primerItem.petName}` : '';
+                    setNuevoPedidoAlerta({ id: p.id, texto: `${examen}${extra}${mascota} (${p.userName})` });
+                });
+                playBeep();
+                loadOrders();
+                setTimeout(() => setNuevoPedidoAlerta(null), 6000);
+            }
+            ultimaRevisionRef.current = data.servidorHoraActual;
+        } catch (e) { console.error('Error checkPedidosNuevos:', e.message); }
+    };
+
+    useEffect(() => { if (!auth) return; const t = setInterval(checkPedidosNuevos, 15000); return () => clearInterval(t); }, [auth]);
 
     const loadOrders = async () => { try { const data = await api.getOrders(); const raw = Array.isArray(data) ? data : (data.orders || []); setOrders(raw.map(normalizeOrder)); } catch (e) { console.error('Error cargando pedidos:', e.message); } };
     const loadNightMode = async () => { try { const data = await api.getNightMode(); setNightMode(!!data?.active); } catch {} };
@@ -2596,6 +2646,20 @@ const App = () => {
 
     return (
         <div className="bg-gray-100 flex flex-col" style={{height:'100vh',overflow:'hidden'}}>
+            {/* Toast de pedido nuevo */}
+            {nuevoPedidoAlerta && (
+                <div className="fixed top-4 right-4 z-50 bg-white border border-cyan-200 shadow-lg rounded-xl px-4 py-3 flex items-center gap-3 cursor-pointer animate-pulse"
+                     style={{maxWidth:'320px'}}
+                     onClick={() => { setView('pedidos'); setNuevoPedidoAlerta(null); }}>
+                    <div className="w-9 h-9 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i className="fas fa-bell text-cyan-600 text-sm"></i>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-xs font-bold text-gray-800">🆕 Pedido nuevo</p>
+                        <p className="text-xs text-gray-600 truncate">{nuevoPedidoAlerta.texto}</p>
+                    </div>
+                </div>
+            )}
             {/* Header - estilo LATEST */}
             <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={()=>setView('inicio')}>
