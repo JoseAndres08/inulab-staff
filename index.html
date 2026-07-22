@@ -2546,20 +2546,34 @@ const App = () => {
         api.getPedidosNuevos(new Date().toISOString())
             .then(r => { ultimaRevisionRef.current = r.servidorHoraActual; })
             .catch(() => { ultimaRevisionRef.current = new Date().toISOString(); });
+        // Pide permiso de notificaciones del sistema (si aún no se concedió).
+        // Con esto, aunque la pestaña esté minimizada, el aviso llega igual
+        // como notificación real del sistema operativo (con su propio sonido).
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
+        }
     }, [auth]);
 
+    const audioCtxRef = useRef(null);
     const playBeep = () => {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(0.25, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.5);
+            if (!audioCtxRef.current) {
+                audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const ctx = audioCtxRef.current;
+            const fire = () => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880;
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            };
+            if (ctx.state === 'suspended') { ctx.resume().then(fire).catch(() => {}); }
+            else { fire(); }
         } catch (e) {}
     };
 
@@ -2573,7 +2587,11 @@ const App = () => {
                     const examen = primerItem?.examName || 'Examen';
                     const extra = p.items && p.items.length > 1 ? ` +${p.items.length - 1}` : '';
                     const mascota = primerItem?.petName ? ` — ${primerItem.petName}` : '';
-                    setNuevoPedidoAlerta({ id: p.id, texto: `${examen}${extra}${mascota} (${p.userName})` });
+                    const texto = `${examen}${extra}${mascota} (${p.userName})`;
+                    setNuevoPedidoAlerta({ id: p.id, texto });
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        try { new Notification('🆕 Pedido nuevo — INULABORATORIOS', { body: texto, tag: p.id }); } catch (e) {}
+                    }
                 });
                 playBeep();
                 loadOrders();
