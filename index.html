@@ -2077,26 +2077,24 @@ const SeccionCatalogo = () => {
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-list-alt text-white"></i></div>
                     <span className="text-white font-bold flex-1">Catálogo</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     {[{k:'medico',label:'Médicos'},{k:'dueno',label:'Dueños'}].map(({k,label}) => (
                         <button key={k} onClick={() => setFiltro(k)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${filtro===k?'bg-white text-indigo-700':'bg-white/20 text-white'}`}>
+                            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${filtro===k?'bg-white text-indigo-700':'bg-white/20 text-white'}`}>
                             {label}
                         </button>
                     ))}
                     <div className="relative flex-1 min-w-0">
-                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                        <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                        <i className="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar..." className="w-full pl-7 pr-2 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
                     </div>
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
                     {!modoEdicion ? (
-                        <button onClick={() => setModoEdicion(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-edit"></i>Editar</button>
+                        <button onClick={() => setModoEdicion(true)} className="px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-edit"></i>Editar</button>
                     ) : (
                         <>
-                            <button onClick={() => { setForm(f => ({ ...f, categoria: '', tipo: filtro })); setShowForm(true); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-folder-plus"></i>Categoría</button>
-                            <button onClick={cancelarEdicion} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/20 text-white flex-shrink-0"><i className="fas fa-times"></i>Cancelar</button>
-                            <button onClick={guardar} disabled={guardando} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 flex-shrink-0 ${cambios>0?'bg-green-500 text-white':'bg-white/20 text-white/60'}`}><i className="fas fa-save"></i>{guardando ? 'Guardando...' : `Guardar${cambios>0?` (${cambios})`:''}`}</button>
+                            <button onClick={() => { setForm(f => ({ ...f, categoria: '', tipo: filtro })); setShowForm(true); }} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-folder-plus"></i></button>
+                            <button onClick={cancelarEdicion} className="px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 bg-white/20 text-white flex-shrink-0"><i className="fas fa-times"></i></button>
+                            <button onClick={guardar} disabled={guardando} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 flex-shrink-0 ${cambios>0?'bg-green-500 text-white':'bg-white/20 text-white/60'}`}><i className="fas fa-save"></i>{guardando ? '...' : (cambios>0?`(${cambios})`:'')}</button>
                         </>
                     )}
                 </div>
