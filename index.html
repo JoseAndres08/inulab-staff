@@ -2521,7 +2521,6 @@ const App = () => {
     const [orders, setOrders]       = useState([]);
     const [nightMode, setNightMode] = useState(false);
     const [view, setView]           = useState('inicio');
-    const [showMasSheet, setShowMasSheet] = useState(false);
     const [loading, setLoading]     = useState(true);
     const [loginErr, setLoginErr]   = useState('');
     const [username, setUsername]   = useState('');
@@ -2695,12 +2694,6 @@ const App = () => {
         { id:'catalogo',   label:'Catálogo',   icon:'fa-list-alt',       color:'text-indigo-600',  active:'bg-indigo-600'  },
         { id:'usuarios',   label:'Usuarios',   icon:'fa-users',          color:'text-rose-600',    active:'bg-rose-600'    },
     ];
-    // Barra inferior móvil: 4 accesos directos + botón "Más" con el resto
-    const MOBILE_PRIMARY_IDS = ['inicio', 'pedidos', 'resultados', 'facturacion'];
-    const MOBILE_MAS_IDS = ['pacientes', 'catalogo', 'usuarios'];
-    const mobilePrimaryNav = NAV.filter(n => MOBILE_PRIMARY_IDS.includes(n.id));
-    const mobileMasNav = NAV.filter(n => MOBILE_MAS_IDS.includes(n.id));
-    const isInMasSection = MOBILE_MAS_IDS.includes(view);
 
     return (
         <div className="bg-gray-100 flex flex-col" style={{height:'100dvh',overflow:'hidden'}}>
@@ -2773,6 +2766,9 @@ const App = () => {
                                             <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">{(user?.username||'A')[0].toUpperCase()}</div>
                                             <div><p className="font-semibold text-gray-800">{user?.username||'Admin'}</p><p className="text-sm text-gray-500">INULABORATORIOS</p></div>
                                         </div>
+                                        <button onClick={handleLogout} className="w-full mt-4 flex items-center justify-center gap-2 text-sm text-red-600 hover:text-white hover:bg-red-600 border border-red-200 px-4 py-3 rounded-xl transition-colors font-medium">
+                                            <i className="fas fa-sign-out-alt"></i>Cerrar sesión
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -2780,50 +2776,19 @@ const App = () => {
                     </div>
                 </div>
             </div>
-            {/* Barra inferior — solo móvil, oculta en escritorio (md:hidden) */}
-            <div className="flex md:hidden flex-shrink-0 bg-white border-t border-gray-200" style={{paddingBottom:'env(safe-area-inset-bottom, 0px)'}}>
-                {mobilePrimaryNav.map(n => (
+            {/* Barra inferior — solo móvil, deslizable horizontal con las 7 secciones */}
+            <div className="flex md:hidden flex-shrink-0 bg-white border-t border-gray-200 overflow-x-auto hide-scrollbar" style={{paddingBottom:'env(safe-area-inset-bottom, 0px)'}}>
+                {NAV.map(n => (
                     <button key={n.id} onClick={()=>setView(n.id)}
-                        className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 relative">
+                        className="flex flex-col items-center justify-center gap-0.5 py-2 relative flex-shrink-0" style={{minWidth:'72px'}}>
                         <div className="relative">
                             <i className={`fas ${n.icon} text-lg ${view===n.id?n.color:'text-gray-400'}`}></i>
                             {n.badge>0&&<span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center">{n.badge}</span>}
                         </div>
-                        <span className={`text-[10px] font-medium ${view===n.id?n.color:'text-gray-400'}`}>{n.label}</span>
+                        <span className={`text-[10px] font-medium whitespace-nowrap ${view===n.id?n.color:'text-gray-400'}`}>{n.label}</span>
                     </button>
                 ))}
-                <button onClick={()=>setShowMasSheet(true)}
-                    className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2">
-                    <i className={`fas fa-ellipsis-h text-lg ${isInMasSection?'text-slate-700':'text-gray-400'}`}></i>
-                    <span className={`text-[10px] font-medium ${isInMasSection?'text-slate-700':'text-gray-400'}`}>Más</span>
-                </button>
             </div>
-            {/* Hoja "Más" — Pacientes, Catálogo, Usuarios, Cerrar sesión (solo móvil) */}
-            {showMasSheet && (
-                <div className="fixed inset-0 z-50 flex items-end md:hidden" style={{background:'rgba(0,0,0,0.4)'}} onClick={()=>setShowMasSheet(false)}>
-                    <div className="w-full bg-white rounded-t-2xl p-4" style={{paddingBottom:'calc(16px + env(safe-area-inset-bottom, 0px))'}} onClick={e=>e.stopPropagation()}>
-                        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
-                        <div className="space-y-1">
-                            {mobileMasNav.map(n => (
-                                <button key={n.id} onClick={()=>{setView(n.id);setShowMasSheet(false);}}
-                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${view===n.id?n.active+' text-white shadow-md':'text-gray-700 hover:bg-gray-100'}`}>
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${view===n.id?'bg-white/20':'bg-gray-100'}`}>
-                                        <i className={`fas ${n.icon} text-sm ${view===n.id?'text-white':n.color}`}></i>
-                                    </div>
-                                    <span className="font-medium text-sm">{n.label}</span>
-                                    {n.badge>0&&<span className={`ml-auto text-xs px-2 py-0.5 rounded-full font-bold ${view===n.id?'bg-white/25 text-white':'bg-red-500 text-white'}`}>{n.badge}</span>}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="border-t border-gray-200 mt-3 pt-3">
-                            <button onClick={()=>{setShowMasSheet(false);handleLogout();}} className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors font-medium">
-                                <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center"><i className="fas fa-sign-out-alt text-sm"></i></div>
-                                <span className="text-sm">Cerrar sesión</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
