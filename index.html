@@ -196,6 +196,7 @@
             <style>@keyframes ld{from{transform:translateX(-100%)}to{transform:translateX(100%)}}</style>
         </div>
     </div>
+    <div id="modal-portal-root"></div>
     <script type="text/babel" data-presets="react">
 
 const { useState, useEffect, useRef } = React;
@@ -696,6 +697,22 @@ const PdfViewer = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clien
 };
 
 
+// ── MODAL PORTAL — saca los modales fuera del árbol de la app (a <body>) ──
+// Esto evita que un modal "fixed" quede atrapado/encajonado dentro de contenedores
+// con scroll propio (header/franja arriba, barra inferior abajo tapándolo).
+const ModalPortal = ({ children }) => {
+    const [node] = useState(() => {
+        let el = document.getElementById('modal-portal-root');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'modal-portal-root';
+            document.body.appendChild(el);
+        }
+        return el;
+    });
+    return ReactDOM.createPortal(children, node);
+};
+
 // ── PDF MODAL (alias para compatibilidad - renderiza dentro del layout) ──────
 const PdfModal = ({ title, subtitle, icon, pdfUrl, date, orderId, userId, clientName, examName, petName, onClose }) => {
     return (
@@ -715,6 +732,7 @@ const UploadResultsModal = ({ order, onClose, onSuccess }) => {
         setLoading(false);
     };
     return (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-2xl max-h-[90vh] flex flex-col">
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
@@ -744,6 +762,7 @@ const UploadResultsModal = ({ order, onClose, onSuccess }) => {
                 </div>
             </div>
         </div>
+        </ModalPortal>
     );
 };
 
@@ -756,6 +775,7 @@ const InvoiceModal = ({ order, onClose, onSuccess }) => {
         setLoading(false);
     };
     return (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between"><div><h2 className="text-gray-800 font-bold">Subir Comprobante</h2><p className="text-gray-600 text-sm">{order.userName}</p></div><button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
@@ -777,6 +797,7 @@ const InvoiceModal = ({ order, onClose, onSuccess }) => {
                 </div>
             </div>
         </div>
+        </ModalPortal>
     );
 };
 
@@ -786,6 +807,7 @@ const AssignModal = ({ order, onClose, onAssign }) => {
     useEffect(() => { api.getMotorizados().then(data => setMotos(Array.isArray(data) ? data : [])).catch(() => setMotos([])); }, []);
     const assign = async () => { if (!selected) return; setLoading(true); try { await api.assignMotorizado(order.id, selected); onAssign('✅ Motorizado asignado correctamente'); onClose(); } catch (e) { alert('❌ Error: ' + e.message); } setLoading(false); };
     return (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
             <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
                 <div className="p-5 border-b border-gray-200 flex items-center justify-between"><h2 className="text-gray-800 font-bold"><i className="fas fa-motorcycle mr-2 text-cyan-600"></i>Asignar Motorizado</h2><button onClick={onClose} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
@@ -795,6 +817,7 @@ const AssignModal = ({ order, onClose, onAssign }) => {
                 <div className="p-5 border-t border-gray-200 flex gap-3"><button onClick={onClose} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button><button onClick={assign} disabled={!selected||loading} className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-bold disabled:opacity-50">{loading?'Asignando...':'Asignar'}</button></div>
             </div>
         </div>
+        </ModalPortal>
     );
 };
 
@@ -907,6 +930,7 @@ const WhatsAppButton = ({ userId }) => {
 const AntecedentesModal = ({ order, onClose }) => {
     const itemsConAntecedentes = (order.items || []).filter(it => it.antecedentes);
     return (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
             <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-gray-200" style={{maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
@@ -939,6 +963,7 @@ const AntecedentesModal = ({ order, onClose }) => {
                 </div>
             </div>
         </div>
+        </ModalPortal>
     );
 };
 
@@ -980,6 +1005,7 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
     };
 
     return (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
             <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-gray-200" style={{height:'85vh',display:'flex',flexDirection:'column'}}>
                 {/* Header */}
@@ -1111,6 +1137,7 @@ const TrackingModal = ({ order, onClose, onCommentSaved }) => {
                 </div>
             </div>
         </div>
+        </ModalPortal>
     );
 };
 
@@ -1760,6 +1787,7 @@ const SeccionPorConsolidar = ({ onSuccess, onBack }) => {
                     ))}
                 </div>
                 {showModal && (
+                    <ModalPortal>
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
                         <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
                             <div className="p-5 border-b border-gray-200 flex items-center justify-between">
@@ -1787,6 +1815,7 @@ const SeccionPorConsolidar = ({ onSuccess, onBack }) => {
                             </div>
                         </div>
                     </div>
+                    </ModalPortal>
                 )}
             </div>
         );
@@ -2262,6 +2291,7 @@ const SeccionCatalogo = () => {
 
             {/* Modal agregar examen */}
             {showForm && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md border border-gray-200 shadow-2xl">
                         <div className="p-5 border-b border-gray-200 flex items-center justify-between"><h2 className="text-gray-800 font-bold"><i className="fas fa-plus-circle mr-2 text-indigo-600"></i>Nuevo Examen</h2><button onClick={() => setShowForm(false)} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center text-gray-600"><i className="fas fa-times"></i></button></div>
@@ -2282,10 +2312,12 @@ const SeccionCatalogo = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* Modal confirmar eliminar */}
             {confirm && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[200] p-4">
                     <div className="bg-white rounded-2xl w-full max-w-sm border border-gray-200 shadow-2xl p-6 text-center">
                         <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"><i className="fas fa-trash-alt text-red-500 text-2xl"></i></div>
@@ -2294,6 +2326,7 @@ const SeccionCatalogo = () => {
                         <div className="flex gap-3"><button onClick={() => setConfirm(null)} className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-sm font-semibold">Cancelar</button><button onClick={() => deleteExamen(confirm)} className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">Eliminar</button></div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );
@@ -2551,6 +2584,7 @@ const SeccionUsuarios = ({ currentUser }) => {
 
             {/* Modal editar usuario */}
             {editUser && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
                     <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
                         <div className="flex items-center justify-between mb-5">
@@ -2581,10 +2615,12 @@ const SeccionUsuarios = ({ currentUser }) => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* Modal confirmar eliminar */}
             {confirmDel && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
                     <div className="bg-white rounded-2xl w-full max-w-xs shadow-2xl p-6 text-center">
                         <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -2598,10 +2634,12 @@ const SeccionUsuarios = ({ currentUser }) => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* Modal crear usuario */}
             {showForm && (
+                <ModalPortal>
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[300] p-4">
                     <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
                         <div className="flex items-center justify-between mb-5">
@@ -2643,6 +2681,7 @@ const SeccionUsuarios = ({ currentUser }) => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );
