@@ -1440,11 +1440,11 @@ const SeccionPacientes = ({ orders }) => {
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-paw text-white"></i></div>
                     <span className="text-white font-bold flex-1">Pacientes</span>
                 </div>
-                <div className="relative">
-                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar paciente o cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
-                </div>
-                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                    <div className="relative flex-shrink-0" style={{width:'170px'}}>
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                    </div>
                     <select value={filterDayP} onChange={e=>setFilterDayP(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
                         <option value="">Día</option>{diasP.map(d=><option key={d} value={d}>{d}</option>)}
                     </select>
@@ -1549,11 +1549,11 @@ const SeccionResultados = ({ orders }) => {
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-medical text-white"></i></div>
                     <span className="text-white font-bold flex-1">Resultados</span>
                 </div>
-                <div className="relative">
-                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar examen, paciente o cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
-                </div>
-                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                    <div className="relative flex-1 min-w-0">
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                    </div>
                     <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
                         <option value="">Día</option>{dias.map(d=><option key={d} value={d}>{d}</option>)}
                     </select>
@@ -1828,15 +1828,13 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-invoice-dollar text-white"></i></div>
                     <span className="text-white font-bold flex-1">Facturación</span>
                 </div>
-                <div className="flex gap-1">
-                    <button onClick={()=>setFacSubTab('entregadas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${facSubTab==='entregadas'?'bg-white text-amber-700':'bg-white/20 text-white'}`}>Entregadas</button>
-                    <button onClick={()=>setFacSubTab('diferidas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${facSubTab==='diferidas'?'bg-white text-violet-700':'bg-white/20 text-white'}`}>Diferidas</button>
-                </div>
-                <div className="relative">
-                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
-                </div>
-                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+                    <button onClick={()=>setFacSubTab('entregadas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex-shrink-0 ${facSubTab==='entregadas'?'bg-white text-amber-700':'bg-white/20 text-white'}`}>Entregadas</button>
+                    <button onClick={()=>setFacSubTab('diferidas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex-shrink-0 ${facSubTab==='diferidas'?'bg-white text-violet-700':'bg-white/20 text-white'}`}>Diferidas</button>
+                    <div className="relative flex-shrink-0" style={{width:'120px'}}>
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                    </div>
                     <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
                         <option value="">Día</option>{dias.map(d=><option key={d} value={d}>{d}</option>)}
                     </select>
@@ -2074,26 +2072,24 @@ const SeccionCatalogo = () => {
                     <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-list-alt text-white"></i></div>
                     <span className="text-white font-bold flex-1">Catálogo</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
                     {[{k:'medico',label:'Médicos'},{k:'dueno',label:'Dueños'}].map(({k,label}) => (
                         <button key={k} onClick={() => setFiltro(k)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filtro===k?'bg-white text-indigo-700':'bg-white/20 text-white'}`}>
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex-shrink-0 ${filtro===k?'bg-white text-indigo-700':'bg-white/20 text-white'}`}>
                             {label}
                         </button>
                     ))}
-                </div>
-                <div className="relative">
-                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar examen..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
-                </div>
-                <div className="flex flex-wrap gap-2">
+                    <div className="relative flex-shrink-0" style={{width:'120px'}}>
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                    </div>
                     {!modoEdicion ? (
-                        <button onClick={() => setModoEdicion(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-white/90 text-indigo-700"><i className="fas fa-edit"></i>Editar</button>
+                        <button onClick={() => setModoEdicion(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-edit"></i>Editar</button>
                     ) : (
                         <>
-                            <button onClick={() => { setForm(f => ({ ...f, categoria: '', tipo: filtro })); setShowForm(true); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/90 text-indigo-700"><i className="fas fa-folder-plus"></i>Categoría</button>
-                            <button onClick={cancelarEdicion} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/20 text-white"><i className="fas fa-times"></i>Cancelar</button>
-                            <button onClick={guardar} disabled={guardando} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${cambios>0?'bg-green-500 text-white':'bg-white/20 text-white/60'}`}><i className="fas fa-save"></i>{guardando ? 'Guardando...' : `Guardar${cambios>0?` (${cambios})`:''}`}</button>
+                            <button onClick={() => { setForm(f => ({ ...f, categoria: '', tipo: filtro })); setShowForm(true); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/90 text-indigo-700 flex-shrink-0"><i className="fas fa-folder-plus"></i>Categoría</button>
+                            <button onClick={cancelarEdicion} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/20 text-white flex-shrink-0"><i className="fas fa-times"></i>Cancelar</button>
+                            <button onClick={guardar} disabled={guardando} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 flex-shrink-0 ${cambios>0?'bg-green-500 text-white':'bg-white/20 text-white/60'}`}><i className="fas fa-save"></i>{guardando ? 'Guardando...' : `Guardar${cambios>0?` (${cambios})`:''}`}</button>
                         </>
                     )}
                 </div>
