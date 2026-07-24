@@ -2829,10 +2829,10 @@ const App = () => {
         catch (e) { setSuccess('❌ Error: ' + e.message); setTimeout(() => setSuccess(''), 4000); }
     };
 
-    if (loading) return (<div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent mx-auto mb-4"></div><p className="text-gray-600 text-sm">Iniciando...</p></div></div>);
+    if (loading) return (<div className="flex items-center justify-center bg-gray-50" style={{position:'fixed',inset:0,height:'100dvh',overflow:'hidden'}}><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent mx-auto mb-4"></div><p className="text-gray-600 text-sm">Iniciando...</p></div></div>);
 
     if (!auth) return (
-        <div className="min-h-screen flex items-center justify-center p-4" style={{background:'linear-gradient(135deg,#ffffff 0%,#f0fffe 40%,#e6fafa 70%,#f8ffff 100%)'}}>
+        <div className="flex items-center justify-center p-4" style={{position:'fixed',inset:0,height:'100dvh',overflow:'hidden',background:'linear-gradient(135deg,#ffffff 0%,#f0fffe 40%,#e6fafa 70%,#f8ffff 100%)'}}>
             <div className="w-full max-w-sm">
                 <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
                     <div className="text-center mb-6">
