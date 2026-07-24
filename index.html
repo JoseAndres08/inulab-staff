@@ -1265,13 +1265,25 @@ const SeccionPedidos = ({ orders, onStatusChange, onSuccess, onRefresh }) => {
     const list = (tab==='pending'?pending:completed).filter(o => !search||o.userName.toLowerCase().includes(search.toLowerCase())||o.items.some(it=>it.exam?.name?.toLowerCase().includes(search.toLowerCase())||it.pet?.name?.toLowerCase().includes(search.toLowerCase())));
     return (
         <div className="flex flex-col h-full">
-            {/* Franja de color — solo móvil */}
-            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg flex items-center gap-3 flex-shrink-0">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-clipboard-list text-white"></i></div>
-                <span className="text-white font-bold flex-1">Pedidos</span>
-                {pending.length>0 && <span className="bg-white/25 text-white text-xs font-bold px-2.5 py-1 rounded-full">{pending.length}</span>}
+            {/* Recuadro de color con todos los controles — solo móvil */}
+            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-blue-500 to-blue-700 shadow-lg flex flex-col gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-clipboard-list text-white"></i></div>
+                    <span className="text-white font-bold flex-1">Pedidos</span>
+                    <button onClick={onRefresh} className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center text-white flex-shrink-0"><i className="fas fa-sync-alt text-xs"></i></button>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-white/20 rounded-xl p-1 gap-1 flex-shrink-0">
+                        <button onClick={()=>setTab('pending')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab==='pending'?'bg-white text-blue-700':'text-white/80'}`}>Pendientes{pending.length>0&&<span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${tab==='pending'?'bg-red-500 text-white':'bg-white/30 text-white'}`}>{pending.length}</span>}</button>
+                        <button onClick={()=>setTab('completed')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab==='completed'?'bg-white text-blue-700':'text-white/80'}`}><i className="fas fa-history mr-1"></i>Historial</button>
+                    </div>
+                    <div className="relative flex-1 min-w-0">
+                        <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                    </div>
+                </div>
             </div>
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+            <div className="hidden md:block flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                         <button onClick={()=>setTab('pending')} className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${tab==='pending'?'bg-blue-600 text-white':'text-gray-700 hover:text-gray-900'}`}>Pendientes{pending.length>0&&<span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{pending.length}</span>}</button>
@@ -1422,12 +1434,29 @@ const SeccionPacientes = ({ orders }) => {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Franja de color — solo móvil */}
-            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-emerald-500 to-emerald-700 shadow-lg flex items-center gap-3 flex-shrink-0">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-paw text-white"></i></div>
-                <span className="text-white font-bold flex-1">Pacientes</span>
+            {/* Recuadro de color con todos los controles — solo móvil */}
+            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-emerald-500 to-emerald-700 shadow-lg flex flex-col gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-paw text-white"></i></div>
+                    <span className="text-white font-bold flex-1">Pacientes</span>
+                </div>
+                <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar paciente o cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                </div>
+                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                    <select value={filterDayP} onChange={e=>setFilterDayP(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Día</option>{diasP.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select value={filterMonthP} onChange={e=>setFilterMonthP(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Mes</option>{mesesP.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+                    </select>
+                    <select value={filterYearP} onChange={e=>setFilterYearP(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Año</option>{yearsP.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                    </select>
+                </div>
             </div>
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+            <div className="hidden md:block flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-emerald-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-paw"></i>Pacientes</span>
                     <div className="relative flex-1 min-w-36">
@@ -1514,12 +1543,31 @@ const SeccionResultados = ({ orders }) => {
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* Franja de color — solo móvil */}
-            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-purple-500 to-purple-700 shadow-lg flex items-center gap-3 flex-shrink-0">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-medical text-white"></i></div>
-                <span className="text-white font-bold flex-1">Resultados</span>
+            {/* Recuadro de color con todos los controles — solo móvil */}
+            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-purple-500 to-purple-700 shadow-lg flex flex-col gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-medical text-white"></i></div>
+                    <span className="text-white font-bold flex-1">Resultados</span>
+                </div>
+                <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar examen, paciente o cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                </div>
+                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                    <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Día</option>{dias.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Mes</option>{meses.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+                    </select>
+                    <select value={filterYear} onChange={e=>setFilterYear(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Año</option>{years.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                    </select>
+                    {anyFilter && <button onClick={()=>{setSearch('');setFilterDay('');setFilterMonth('');setFilterYear('');}} className="px-2 py-1.5 rounded-lg bg-white/90 text-red-600 text-xs font-semibold flex-shrink-0"><i className="fas fa-times mr-1"></i>Limpiar</button>}
+                </div>
+                {anyFilter && <p className="text-xs text-white/90 font-medium"><i className="fas fa-filter mr-1"></i>{filtered.length} de {allExams.length} resultados</p>}
             </div>
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+            <div className="hidden md:block flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-purple-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-medical"></i>Resultados</span>
                     <div className="relative flex-1 min-w-36">
@@ -1774,12 +1822,35 @@ const SeccionFacturacion = ({ orders, onRefresh }) => {
 
     return (
         <div className="flex flex-col h-full relative">
-            {/* Franja de color — solo móvil */}
-            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-amber-500 to-amber-700 shadow-lg flex items-center gap-3 flex-shrink-0">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-invoice-dollar text-white"></i></div>
-                <span className="text-white font-bold flex-1">Facturación</span>
+            {/* Recuadro de color con todos los controles — solo móvil */}
+            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-amber-500 to-amber-700 shadow-lg flex flex-col gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-file-invoice-dollar text-white"></i></div>
+                    <span className="text-white font-bold flex-1">Facturación</span>
+                </div>
+                <div className="flex gap-1">
+                    <button onClick={()=>setFacSubTab('entregadas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${facSubTab==='entregadas'?'bg-white text-amber-700':'bg-white/20 text-white'}`}>Entregadas</button>
+                    <button onClick={()=>setFacSubTab('diferidas')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${facSubTab==='diferidas'?'bg-white text-violet-700':'bg-white/20 text-white'}`}>Diferidas</button>
+                </div>
+                <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                </div>
+                <div className="flex gap-2 overflow-x-auto hide-scrollbar">
+                    <select value={filterDay} onChange={e=>setFilterDay(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Día</option>{dias.map(d=><option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Mes</option>{meses.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+                    </select>
+                    <select value={filterYear} onChange={e=>setFilterYear(e.target.value)} className="px-2 py-1.5 rounded-lg bg-white/90 border-0 text-gray-700 text-xs focus:outline-none flex-shrink-0">
+                        <option value="">Año</option>{years.map(y=><option key={y} value={String(y)}>{y}</option>)}
+                    </select>
+                    {anyFilter && <button onClick={()=>{setSearch('');setFilterDay('');setFilterMonth('');setFilterYear('');}} className="px-2 py-1.5 rounded-lg bg-white/90 text-red-600 text-xs font-semibold flex-shrink-0"><i className="fas fa-times mr-1"></i>Limpiar</button>}
+                </div>
+                {anyFilter && <p className="text-xs text-white/90 font-medium"><i className="fas fa-filter mr-1"></i>{filtered.length} de {invoices.length} comprobantes</p>}
             </div>
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+            <div className="hidden md:block flex-shrink-0 bg-white border-b border-gray-200 p-4">
 
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-amber-600 font-semibold text-sm flex items-center gap-2 mr-1"><i className="fas fa-file-invoice-dollar"></i>Facturación</span>
@@ -1997,13 +2068,45 @@ const SeccionCatalogo = () => {
 
     return (
         <div className="flex flex-col h-full">
-            {/* Franja de color — solo móvil */}
-            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-indigo-500 to-indigo-700 shadow-lg flex items-center gap-3 flex-shrink-0">
-                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-list-alt text-white"></i></div>
-                <span className="text-white font-bold flex-1">Catálogo</span>
+            {/* Recuadro de color con todos los controles — solo móvil */}
+            <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-indigo-500 to-indigo-700 shadow-lg flex flex-col gap-3 flex-shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-list-alt text-white"></i></div>
+                    <span className="text-white font-bold flex-1">Catálogo</span>
+                </div>
+                <div className="flex gap-1">
+                    {[{k:'medico',label:'Médicos'},{k:'dueno',label:'Dueños'}].map(({k,label}) => (
+                        <button key={k} onClick={() => setFiltro(k)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${filtro===k?'bg-white text-indigo-700':'bg-white/20 text-white'}`}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <div className="relative">
+                    <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar examen..." className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/90 border-0 text-gray-800 text-xs focus:outline-none"/>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {!modoEdicion ? (
+                        <button onClick={() => setModoEdicion(true)} className="px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 bg-white/90 text-indigo-700"><i className="fas fa-edit"></i>Editar</button>
+                    ) : (
+                        <>
+                            <button onClick={() => { setForm(f => ({ ...f, categoria: '', tipo: filtro })); setShowForm(true); }} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/90 text-indigo-700"><i className="fas fa-folder-plus"></i>Categoría</button>
+                            <button onClick={cancelarEdicion} className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-white/20 text-white"><i className="fas fa-times"></i>Cancelar</button>
+                            <button onClick={guardar} disabled={guardando} className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${cambios>0?'bg-green-500 text-white':'bg-white/20 text-white/60'}`}><i className="fas fa-save"></i>{guardando ? 'Guardando...' : `Guardar${cambios>0?` (${cambios})`:''}`}</button>
+                        </>
+                    )}
+                </div>
+                {modoEdicion && (
+                    <div className="bg-white/15 rounded-xl px-3 py-2 flex items-center gap-2">
+                        <i className="fas fa-pencil-alt text-white text-xs"></i>
+                        <p className="text-white text-xs font-medium flex-1">Modo edición activo</p>
+                        {cambios > 0 && <span className="bg-white/25 text-white text-xs px-2 py-0.5 rounded-full font-bold">{cambios} cambios</span>}
+                    </div>
+                )}
             </div>
             {/* Barra superior */}
-            <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4">
+            <div className="hidden md:block flex-shrink-0 bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3 flex-wrap">
                         <span className="text-indigo-600 font-semibold text-sm flex items-center gap-2"><i className="fas fa-list-alt"></i>Catálogo</span>
@@ -2405,14 +2508,15 @@ const SeccionUsuarios = ({ currentUser }) => {
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            {/* Franja de color — solo móvil */}
+            {/* Recuadro de color con boton de accion — solo móvil */}
             <div className="md:hidden mx-4 mt-3 mb-1 rounded-2xl p-4 bg-gradient-to-r from-rose-500 to-rose-700 shadow-lg flex items-center gap-3 flex-shrink-0">
                 <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0"><i className="fas fa-users text-white"></i></div>
                 <span className="text-white font-bold flex-1">Usuarios</span>
+                <button onClick={()=>{setShowForm(true);setErr('');setOk('');}} className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center text-white flex-shrink-0"><i className="fas fa-plus text-sm"></i></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
                 <div className="max-w-lg">
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="hidden md:flex items-center justify-between mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-800">Usuarios</h1>
                             <p className="text-gray-500 text-sm">Administra el equipo</p>
